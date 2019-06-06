@@ -1,59 +1,78 @@
 package gezer
 
 import (
+	"bytes"
+	"github.com/PuerkitoBio/goquery"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 )
 
 type Gezer struct {
-	client  *http.Client
-	Results chan *Response
+	client *http.Client
+	wg     sync.WaitGroup
+	Parse  func(response *Response)
+
+	startURLs          []string
+	startedProcessing  int
+	finishedProcessing int
 }
 
 type Response struct {
 	*http.Response
 	Body []byte
+	Doc  *goquery.Document
 }
 
-func NewGezer() *Gezer {
+func NewGezer(parse func(response *Response), startURLs ...string) *Gezer {
 	return &Gezer{
 		client: &http.Client{
 			Timeout: time.Second * 10,
 		},
-		Results: make(chan *Response, 1),
+		Parse:     parse,
+		startURLs: startURLs,
 	}
 }
 
-func (g *Gezer) StartURLs(urls ...string) {
-	for _, url := range urls {
+func (g *Gezer) Start() {
+	g.wg.Add(len(g.startURLs))
 
-		// Get request
-		resp, err := g.client.Get(url)
-		if err != nil {
-			if resp != nil {
-				_ = resp.Body.Close()
-			}
-			continue
-		}
-
-		// Read body
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			continue
-		}
-		_ = resp.Body.Close()
-
-		// Create response
-		response := Response{
-			Response: resp,
-			Body:     body,
-		}
-
-		// Send response
-		g.Results <- &response
+	for _, url := range g.startURLs {
+		go g.getRequest(url)
 	}
 
-	// Close chan, as we finished sending all the results
-	close(g.Results)
+	g.wg.Wait()
+}
+
+func (g *Gezer) getRequest(url string) {
+	defer g.wg.Done()
+
+	// Get request
+	resp, err := g.client.Get(url)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		return
+	}
+
+	// Read body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	// Create Document
+	doc, _ := goquery.NewDocumentFromReader(bytes.NewReader(body))
+
+	// Create response
+	response := Response{
+		Response: resp,
+		Body:     body,
+		Doc:      doc,
+	}
+
+	// Parse response
+	g.Parse(&response)
 }
