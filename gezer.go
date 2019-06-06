@@ -12,11 +12,12 @@ import (
 type Gezer struct {
 	client *http.Client
 	wg     sync.WaitGroup
-	Parse  func(response *Response)
+	opt    Opt
+}
 
-	startURLs          []string
-	startedProcessing  int
-	finishedProcessing int
+type Opt struct {
+	StartURLs []string
+	ParseFunc func(response *Response)
 }
 
 type Response struct {
@@ -25,20 +26,19 @@ type Response struct {
 	Doc  *goquery.Document
 }
 
-func NewGezer(parse func(response *Response), startURLs ...string) *Gezer {
+func NewGezer(opt Opt) *Gezer {
 	return &Gezer{
 		client: &http.Client{
 			Timeout: time.Second * 10,
 		},
-		Parse:     parse,
-		startURLs: startURLs,
+		opt: opt,
 	}
 }
 
 func (g *Gezer) Start() {
-	g.wg.Add(len(g.startURLs))
+	g.wg.Add(len(g.opt.StartURLs))
 
-	for _, url := range g.startURLs {
+	for _, url := range g.opt.StartURLs {
 		go g.getRequest(url)
 	}
 
@@ -73,6 +73,6 @@ func (g *Gezer) getRequest(url string) {
 		Doc:      doc,
 	}
 
-	// Parse response
-	g.Parse(&response)
+	// ParseFunc response
+	g.opt.ParseFunc(&response)
 }
