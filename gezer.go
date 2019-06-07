@@ -2,10 +2,12 @@ package gezer
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -75,8 +77,25 @@ func (g *Gezer) getRequest(url string) {
 		Body:     body,
 		Doc:      doc,
 		Gezer:    g,
+		Exports:  make(chan map[string]interface{}, 1),
 	}
+
+	// Export Function
+	go func() {
+		file, err := os.Create("out.json")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "output file creation error: %v", err)
+			return
+		}
+
+		for res := range response.Exports {
+			fmt.Println(res)
+			_ = json.NewEncoder(file).Encode(res)
+		}
+
+	}()
 
 	// ParseFunc response
 	g.opt.ParseFunc(&response)
+
 }

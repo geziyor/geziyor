@@ -11,7 +11,8 @@ type Response struct {
 	Body []byte
 	Doc  *goquery.Document
 
-	Gezer *Gezer
+	Gezer   *Gezer
+	Exports chan map[string]interface{}
 }
 
 func (r *Response) JoinURL(relativeURL string) string {
