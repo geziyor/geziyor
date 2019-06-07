@@ -7,6 +7,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -19,8 +20,9 @@ type Gezer struct {
 }
 
 type Opt struct {
-	StartURLs []string
-	ParseFunc func(response *Response)
+	AllowedDomains []string
+	StartURLs      []string
+	ParseFunc      func(response *Response)
 }
 
 func NewGezer(opt Opt) *Gezer {
@@ -47,14 +49,34 @@ func (g *Gezer) Get(url string) {
 	go g.getRequest(url)
 }
 
-func (g *Gezer) getRequest(url string) {
+func (g *Gezer) getRequest(rawURL string) {
 	defer g.wg.Done()
 
+	// Parse URL
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "url parsing error: %v", err)
+		return
+	}
+
+	// Check for allowed domains
+	var allowed bool
+	for _, domain := range g.opt.AllowedDomains {
+		if domain == parsedURL.Host {
+			allowed = true
+			break
+		}
+	}
+	if !allowed && len(g.opt.AllowedDomains) != 0 {
+		fmt.Fprintf(os.Stderr, "domain not allowed: %s", parsedURL.Host)
+		return
+	}
+
 	// Log
-	fmt.Println("Fetching: ", url)
+	fmt.Println("Fetching: ", rawURL)
 
 	// Get request
-	resp, err := g.client.Get(url)
+	resp, err := g.client.Get(rawURL)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -65,6 +87,7 @@ func (g *Gezer) getRequest(url string) {
 	// Read body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "reading body error: %v", err)
 		return
 	}
 
