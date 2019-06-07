@@ -2,6 +2,7 @@ package gezer
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"io/ioutil"
 	"net/http"
@@ -18,12 +19,6 @@ type Gezer struct {
 type Opt struct {
 	StartURLs []string
 	ParseFunc func(response *Response)
-}
-
-type Response struct {
-	*http.Response
-	Body []byte
-	Doc  *goquery.Document
 }
 
 func NewGezer(opt Opt) *Gezer {
@@ -45,8 +40,16 @@ func (g *Gezer) Start() {
 	g.wg.Wait()
 }
 
+func (g *Gezer) Get(url string) {
+	g.wg.Add(1)
+	go g.getRequest(url)
+}
+
 func (g *Gezer) getRequest(url string) {
 	defer g.wg.Done()
+
+	// Log
+	fmt.Println("Fetching: ", url)
 
 	// Get request
 	resp, err := g.client.Get(url)
@@ -71,6 +74,7 @@ func (g *Gezer) getRequest(url string) {
 		Response: resp,
 		Body:     body,
 		Doc:      doc,
+		Gezer:    g,
 	}
 
 	// ParseFunc response

@@ -23,6 +23,9 @@ func TestGezer_StartURLs_HTML(t *testing.T) {
 			r.Doc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
 				fmt.Println(i, s.Find("span.text").Text(), s.Find("small.author").Text())
 			})
+			if href, ok := r.Doc.Find("li.next > a").Attr("href"); ok {
+				r.Gezer.Get(r.JoinURL(href))
+			}
 		},
 	})
 	gezer.Start()
