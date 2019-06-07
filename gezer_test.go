@@ -30,8 +30,23 @@ func TestGezer_StartURLs_HTML(t *testing.T) {
 				}
 			})
 			if href, ok := r.Doc.Find("li.next > a").Attr("href"); ok {
-				r.Gezer.Get(r.JoinURL(href))
+				go r.Gezer.Get(r.JoinURL(href))
 			}
+		},
+	})
+	gezer.Start()
+}
+
+func TestGezer_Concurrent_Requests(t *testing.T) {
+	gezer := NewGezer(Opt{
+		AllowedDomains: []string{"quotes.toscrape.com"},
+		StartURLs:      []string{"http://quotes.toscrape.com/"},
+		ParseFunc: func(r *Response) {
+			r.Doc.Find("a").Each(func(i int, s *goquery.Selection) {
+				if href, ok := s.Attr("href"); ok {
+					go r.Gezer.Get(r.JoinURL(href))
+				}
+			})
 		},
 	})
 	gezer.Start()

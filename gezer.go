@@ -2,7 +2,6 @@ package gezer
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"io/ioutil"
@@ -35,40 +34,19 @@ func NewGezer(opt Opt) *Gezer {
 }
 
 func (g *Gezer) Start() {
-	g.wg.Add(len(g.opt.StartURLs))
-
-	for _, url := range g.opt.StartURLs {
-		go g.getRequest(url)
+	for _, startURL := range g.opt.StartURLs {
+		go g.Get(startURL)
 	}
 
+	time.Sleep(time.Millisecond)
 	g.wg.Wait()
 }
 
-func (g *Gezer) Get(url string) {
+func (g *Gezer) Get(rawURL string) {
 	g.wg.Add(1)
-	go g.getRequest(url)
-}
-
-func (g *Gezer) getRequest(rawURL string) {
 	defer g.wg.Done()
 
-	// Parse URL
-	parsedURL, err := url.Parse(rawURL)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "url parsing error: %v", err)
-		return
-	}
-
-	// Check for allowed domains
-	var allowed bool
-	for _, domain := range g.opt.AllowedDomains {
-		if domain == parsedURL.Host {
-			allowed = true
-			break
-		}
-	}
-	if !allowed && len(g.opt.AllowedDomains) != 0 {
-		fmt.Fprintf(os.Stderr, "domain not allowed: %s", parsedURL.Host)
+	if !checkURL(rawURL, g.opt.AllowedDomains) {
 		return
 	}
 
@@ -87,7 +65,7 @@ func (g *Gezer) getRequest(rawURL string) {
 	// Read body
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "reading body error: %v", err)
+		fmt.Fprintf(os.Stderr, "reading body error: %v\n", err)
 		return
 	}
 
@@ -104,21 +82,34 @@ func (g *Gezer) getRequest(rawURL string) {
 	}
 
 	// Export Function
-	go func() {
-		file, err := os.Create("out.json")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "output file creation error: %v", err)
-			return
-		}
-
-		for res := range response.Exports {
-			fmt.Println(res)
-			_ = json.NewEncoder(file).Encode(res)
-		}
-
-	}()
+	go Export(&response)
 
 	// ParseFunc response
 	g.opt.ParseFunc(&response)
+	time.Sleep(time.Millisecond)
+}
 
+func checkURL(rawURL string, allowedDomains []string) bool {
+
+	// Parse URL
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "url parsing error: %v\n", err)
+		return false
+	}
+
+	// Check for allowed domains
+	var allowed bool
+	for _, domain := range allowedDomains {
+		if domain == parsedURL.Host {
+			allowed = true
+			break
+		}
+	}
+	if !allowed && len(allowedDomains) != 0 {
+		fmt.Fprintf(os.Stderr, "domain not allowed: %s\n", parsedURL.Host)
+		return false
+	}
+
+	return true
 }
