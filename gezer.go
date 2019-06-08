@@ -18,6 +18,8 @@ type Gezer struct {
 	client *http.Client
 	wg     sync.WaitGroup
 	opt    Opt
+
+	visitedURLS []string
 }
 
 type Opt struct {
@@ -59,7 +61,7 @@ func (g *Gezer) Get(rawURL string) {
 	g.wg.Add(1)
 	defer g.wg.Done()
 
-	if !checkURL(rawURL, g.opt.AllowedDomains) {
+	if !checkURL(rawURL, g) {
 		return
 	}
 
@@ -102,7 +104,7 @@ func (g *Gezer) Get(rawURL string) {
 	time.Sleep(time.Millisecond)
 }
 
-func checkURL(rawURL string, allowedDomains []string) bool {
+func checkURL(rawURL string, g *Gezer) bool {
 
 	// Parse URL
 	parsedURL, err := url.Parse(rawURL)
@@ -112,10 +114,17 @@ func checkURL(rawURL string, allowedDomains []string) bool {
 	}
 
 	// Check for allowed domains
-	if len(allowedDomains) != 0 && !Contains(allowedDomains, parsedURL.Host) {
+	if len(g.opt.AllowedDomains) != 0 && !Contains(g.opt.AllowedDomains, parsedURL.Host) {
 		log.Printf("Domain not allowed: %s\n", parsedURL.Host)
 		return false
 	}
+
+	// Check for duplicate requests
+	if Contains(g.visitedURLS, rawURL) {
+		log.Printf("URL already visited %s\n", rawURL)
+		return false
+	}
+	g.visitedURLS = append(g.visitedURLS, rawURL)
 
 	return true
 }

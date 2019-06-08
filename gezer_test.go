@@ -24,6 +24,7 @@ func TestGezer_StartURLs_HTML(t *testing.T) {
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: func(r *Response) {
 			r.Doc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
+				// Export Data
 				r.Exports <- map[string]interface{}{
 					"text":   s.Find("span.text").Text(),
 					"author": s.Find("small.author").Text(),
@@ -32,6 +33,8 @@ func TestGezer_StartURLs_HTML(t *testing.T) {
 					}),
 				}
 			})
+
+			// Next Page
 			if href, ok := r.Doc.Find("li.next > a").Attr("href"); ok {
 				go r.Gezer.Get(r.JoinURL(href))
 			}
