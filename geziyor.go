@@ -23,14 +23,6 @@ type Geziyor struct {
 	visitedURLS []string
 }
 
-// Options is custom options type for Geziyor
-type Options struct {
-	AllowedDomains []string
-	StartURLs      []string
-	ParseFunc      func(response *Response)
-	Cache          httpcache.Cache
-}
-
 func init() {
 	log.SetOutput(os.Stdout)
 }
@@ -40,7 +32,7 @@ func init() {
 func NewGeziyor(opt Options) *Geziyor {
 	geziyor := &Geziyor{
 		client: &http.Client{
-			Timeout: time.Second * 10,
+			Timeout: time.Second * 60,
 		},
 		opt: opt,
 	}

@@ -20,9 +20,6 @@ geziyor := NewGeziyor(Opt{
             r.Exports <- map[string]interface{}{
                 "text":   s.Find("span.text").Text(),
                 "author": s.Find("small.author").Text(),
-                "tags": s.Find("div.tags > a.tag").Map(func(_ int, s *goquery.Selection) string {
-                    return s.Text()
-                }),
             }
         })
 
