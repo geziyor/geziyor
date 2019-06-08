@@ -7,7 +7,16 @@ import (
 	"testing"
 )
 
-func TestGeziyor_StartURLs_Simple(t *testing.T) {
+func TestGeziyor_Simple(t *testing.T) {
+	NewGeziyor(Opt{
+		StartURLs: []string{"http://api.ipify.org"},
+		ParseFunc: func(r *Response) {
+			fmt.Println(string(r.Body))
+		},
+	}).Start()
+}
+
+func TestGeziyor_IP(t *testing.T) {
 	geziyor := NewGeziyor(Opt{
 		StartURLs: []string{"http://api.ipify.org"},
 		Cache:     httpcache.NewMemoryCache(),
@@ -19,7 +28,7 @@ func TestGeziyor_StartURLs_Simple(t *testing.T) {
 	geziyor.Start()
 }
 
-func TestGeziyor_StartURLs_HTML(t *testing.T) {
+func TestGeziyor_HTML(t *testing.T) {
 	geziyor := NewGeziyor(Opt{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: func(r *Response) {
