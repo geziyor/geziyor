@@ -1,37 +1,38 @@
-package geziyor
+package geziyor_test
 
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fpfeng/httpcache"
+	"github.com/geziyor/geziyor"
 	"testing"
 )
 
 func TestGeziyor_Simple(t *testing.T) {
-	NewGeziyor(Opt{
+	geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
-		ParseFunc: func(r *Response) {
+		ParseFunc: func(r *geziyor.Response) {
 			fmt.Println(string(r.Body))
 		},
 	}).Start()
 }
 
 func TestGeziyor_IP(t *testing.T) {
-	geziyor := NewGeziyor(Opt{
+	gez := geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		Cache:     httpcache.NewMemoryCache(),
-		ParseFunc: func(r *Response) {
+		ParseFunc: func(r *geziyor.Response) {
 			fmt.Println(string(r.Body))
 			r.Geziyor.Get("http://api.ipify.org")
 		},
 	})
-	geziyor.Start()
+	gez.Start()
 }
 
 func TestGeziyor_HTML(t *testing.T) {
-	geziyor := NewGeziyor(Opt{
+	gez := geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
-		ParseFunc: func(r *Response) {
+		ParseFunc: func(r *geziyor.Response) {
 			r.Doc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
 				// Export Data
 				r.Exports <- map[string]interface{}{
@@ -49,14 +50,14 @@ func TestGeziyor_HTML(t *testing.T) {
 			}
 		},
 	})
-	geziyor.Start()
+	gez.Start()
 }
 
 func TestGeziyor_Concurrent_Requests(t *testing.T) {
-	geziyor := NewGeziyor(Opt{
+	gez := geziyor.NewGeziyor(geziyor.Options{
 		AllowedDomains: []string{"quotes.toscrape.com"},
 		StartURLs:      []string{"http://quotes.toscrape.com/"},
-		ParseFunc: func(r *Response) {
+		ParseFunc: func(r *geziyor.Response) {
 			//r.Exports <- map[string]interface{}{"href": r.Request.URL.String()}
 			r.Doc.Find("a").Each(func(i int, s *goquery.Selection) {
 				if href, ok := s.Attr("href"); ok {
@@ -65,5 +66,5 @@ func TestGeziyor_Concurrent_Requests(t *testing.T) {
 			})
 		},
 	})
-	geziyor.Start()
+	gez.Start()
 }

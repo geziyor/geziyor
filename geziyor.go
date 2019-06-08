@@ -18,13 +18,13 @@ import (
 type Geziyor struct {
 	client *http.Client
 	wg     sync.WaitGroup
-	opt    Opt
+	opt    Options
 
 	visitedURLS []string
 }
 
-// Opt is custom options type for Geziyor
-type Opt struct {
+// Options is custom options type for Geziyor
+type Options struct {
 	AllowedDomains []string
 	StartURLs      []string
 	ParseFunc      func(response *Response)
@@ -37,7 +37,7 @@ func init() {
 
 // NewGeziyor creates new Geziyor with default values.
 // If options provided, options
-func NewGeziyor(opt Opt) *Geziyor {
+func NewGeziyor(opt Options) *Geziyor {
 	geziyor := &Geziyor{
 		client: &http.Client{
 			Timeout: time.Second * 10,
@@ -65,6 +65,16 @@ func (g *Geziyor) Start() {
 // Get issues a GET to the specified URL.
 func (g *Geziyor) Get(url string) {
 	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("Request creating error %v\n", err)
+		return
+	}
+	g.Do(req)
+}
+
+// Head issues a HEAD to the specified URL
+func (g *Geziyor) Head(url string) {
+	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
