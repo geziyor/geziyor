@@ -1,4 +1,4 @@
-package gezer
+package geziyor
 
 import (
 	"encoding/json"

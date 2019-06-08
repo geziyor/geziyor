@@ -1,4 +1,4 @@
-package gezer
+package geziyor
 
 import (
 	"bytes"
@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-type Gezer struct {
+type Geziyor struct {
 	client *http.Client
 	wg     sync.WaitGroup
 	opt    Opt
@@ -33,8 +33,8 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
-func NewGezer(opt Opt) *Gezer {
-	gezer := &Gezer{
+func NewGeziyor(opt Opt) *Geziyor {
+	geziyor := &Geziyor{
 		client: &http.Client{
 			Timeout: time.Second * 10,
 		},
@@ -42,13 +42,13 @@ func NewGezer(opt Opt) *Gezer {
 	}
 
 	if opt.Cache != nil {
-		gezer.client.Transport = httpcache.NewTransport(opt.Cache)
+		geziyor.client.Transport = httpcache.NewTransport(opt.Cache)
 	}
 
-	return gezer
+	return geziyor
 }
 
-func (g *Gezer) Start() {
+func (g *Geziyor) Start() {
 	for _, startURL := range g.opt.StartURLs {
 		go g.Get(startURL)
 	}
@@ -57,7 +57,7 @@ func (g *Gezer) Start() {
 	g.wg.Wait()
 }
 
-func (g *Gezer) Get(rawURL string) {
+func (g *Geziyor) Get(rawURL string) {
 	g.wg.Add(1)
 	defer g.wg.Done()
 
@@ -92,7 +92,7 @@ func (g *Gezer) Get(rawURL string) {
 		Response: resp,
 		Body:     body,
 		Doc:      doc,
-		Gezer:    g,
+		Geziyor:  g,
 		Exports:  make(chan map[string]interface{}, 1),
 	}
 
@@ -104,7 +104,7 @@ func (g *Gezer) Get(rawURL string) {
 	time.Sleep(time.Millisecond)
 }
 
-func checkURL(rawURL string, g *Gezer) bool {
+func checkURL(rawURL string, g *Geziyor) bool {
 
 	// Parse URL
 	parsedURL, err := url.Parse(rawURL)

@@ -1,4 +1,4 @@
-package gezer
+package geziyor
 
 import (
 	"github.com/PuerkitoBio/goquery"
@@ -11,7 +11,7 @@ type Response struct {
 	Body []byte
 	Doc  *goquery.Document
 
-	Gezer   *Gezer
+	Geziyor *Geziyor
 	Exports chan map[string]interface{}
 }
 

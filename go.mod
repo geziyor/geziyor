@@ -1,4 +1,4 @@
-module github.com/gogezer/gezer
+module github.com/geziyor/geziyor
 
 go 1.12
 

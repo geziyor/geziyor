@@ -1,5 +1,5 @@
-# Gezer
-Scraper and crawler framework for Golang. Gezer uses go *channels* over *callbacks*   
+# Geziyor
+Scraper and crawler framework for Golang. Geziyor uses go *channels* over *callbacks*   
 
 ## Features
 - 1.000+ Requests/Sec  
@@ -9,7 +9,7 @@ Scraper and crawler framework for Golang. Gezer uses go *channels* over *callbac
 
 ## Example
 ```go
-gezer := NewGezer(Opt{
+geziyor := NewGeziyor(Opt{
     StartURLs: []string{"http://quotes.toscrape.com/"},
     ParseFunc: func(r *Response) {
         r.Doc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
@@ -25,14 +25,14 @@ gezer := NewGezer(Opt{
 
         // Next Page
         if href, ok := r.Doc.Find("li.next > a").Attr("href"); ok {
-            go r.Gezer.Get(r.JoinURL(href))
+            go r.Geziyor.Get(r.JoinURL(href))
         }
     },
 })
-gezer.Start()
+geziyor.Start()
 ```
 
 
 ## Installation
 
-    go get github.com/gogezer/gezer
+    go get github.com/geziyor/geziyor
