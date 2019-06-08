@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
-	httpcacheDumb "github.com/fpfeng/httpcache"
+	"github.com/fpfeng/httpcache"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -24,17 +24,26 @@ type Opt struct {
 	AllowedDomains []string
 	StartURLs      []string
 	ParseFunc      func(response *Response)
+	Cache          httpcache.Cache
+}
+
+func init() {
+	log.SetOutput(os.Stdout)
 }
 
 func NewGezer(opt Opt) *Gezer {
-	log.SetOutput(os.Stdout)
-	return &Gezer{
+	gezer := &Gezer{
 		client: &http.Client{
-			Timeout:   time.Second * 10,
-			Transport: httpcacheDumb.NewMemoryCacheTransport(),
+			Timeout: time.Second * 10,
 		},
 		opt: opt,
 	}
+
+	if opt.Cache != nil {
+		gezer.client.Transport = httpcache.NewTransport(opt.Cache)
+	}
+
+	return gezer
 }
 
 func (g *Gezer) Start() {

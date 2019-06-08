@@ -3,12 +3,14 @@ package gezer
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/fpfeng/httpcache"
 	"testing"
 )
 
 func TestGezer_StartURLs_Simple(t *testing.T) {
 	gezer := NewGezer(Opt{
 		StartURLs: []string{"http://api.ipify.org"},
+		Cache:     httpcache.NewMemoryCache(),
 		ParseFunc: func(r *Response) {
 			fmt.Println(string(r.Body))
 			r.Gezer.Get("http://api.ipify.org")
