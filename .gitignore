@@ -16,3 +16,6 @@
 
 # IDE directories
 .idea/
+
+# Output files
+out.json

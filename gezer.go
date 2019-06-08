@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	httpcacheDumb "github.com/fpfeng/httpcache"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -25,9 +27,11 @@ type Opt struct {
 }
 
 func NewGezer(opt Opt) *Gezer {
+	log.SetOutput(os.Stdout)
 	return &Gezer{
 		client: &http.Client{
-			Timeout: time.Second * 10,
+			Timeout:   time.Second * 10,
+			Transport: httpcacheDumb.NewMemoryCacheTransport(),
 		},
 		opt: opt,
 	}
@@ -51,7 +55,7 @@ func (g *Gezer) Get(rawURL string) {
 	}
 
 	// Log
-	fmt.Println("Fetching: ", rawURL)
+	log.Println("Fetching: ", rawURL)
 
 	// Get request
 	resp, err := g.client.Get(rawURL)
@@ -99,17 +103,20 @@ func checkURL(rawURL string, allowedDomains []string) bool {
 	}
 
 	// Check for allowed domains
-	var allowed bool
-	for _, domain := range allowedDomains {
-		if domain == parsedURL.Host {
-			allowed = true
-			break
-		}
-	}
-	if !allowed && len(allowedDomains) != 0 {
-		fmt.Fprintf(os.Stderr, "domain not allowed: %s\n", parsedURL.Host)
+	if len(allowedDomains) != 0 && !Contains(allowedDomains, parsedURL.Host) {
+		log.Printf("Domain not allowed: %s\n", parsedURL.Host)
 		return false
 	}
 
 	return true
+}
+
+// Contains checks whether []string contains string
+func Contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
