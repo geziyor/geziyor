@@ -2,6 +2,7 @@ package geziyor
 
 import (
 	"github.com/fpfeng/httpcache"
+	"time"
 )
 
 // Options is custom options type for Geziyor
@@ -13,6 +14,8 @@ type Options struct {
 	StartURLs []string
 	// ParseFunc is callback of StartURLs response.
 	ParseFunc func(response *Response)
+	// Timeout is global request timeout
+	Timeout time.Duration
 
 	// Set this to enable caching responses.
 	// Memory Cache: httpcache.NewMemoryCache()

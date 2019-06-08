@@ -40,6 +40,9 @@ func NewGeziyor(opt Options) *Geziyor {
 	if opt.Cache != nil {
 		geziyor.client.Transport = httpcache.NewTransport(opt.Cache)
 	}
+	if opt.Timeout != 0 {
+		geziyor.client.Timeout = opt.Timeout
+	}
 
 	return geziyor
 }
@@ -92,6 +95,7 @@ func (g *Geziyor) Do(req *http.Request) {
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		log.Printf("Response error: %v\n", err)
 		return
 	}
 
