@@ -37,4 +37,7 @@ type Options struct {
 	RequestDelay time.Duration
 	// RequestDelayRandomize uses random interval between 0.5 * RequestDelay and 1.5 * RequestDelay
 	RequestDelayRandomize bool
+
+	// Disable logging by setting this true
+	LogDisabled bool
 }

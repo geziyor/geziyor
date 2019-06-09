@@ -12,6 +12,7 @@ Geziyor is a blazing fast web crawling and web scraping framework, used to crawl
 - Request Delays (Constant/Randomized) 
 - Automatic response decoding to UTF-8
 
+See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for customization. 
 
 ## Usage
 Simplest usage 
@@ -53,4 +54,5 @@ geziyor.Start()
 
     go get github.com/geziyor/geziyor
     
-We highly recommend you to use go modules. As this project is in **development stage** right now.
+## Status
+We highly recommend you to use go modules. As this project is in **development stage** right now and **API is not stable**.

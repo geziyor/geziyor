@@ -62,6 +62,9 @@ func NewGeziyor(opt Options) *Geziyor {
 	if opt.UserAgent == "" {
 		geziyor.opt.UserAgent = "Geziyor 1.0"
 	}
+	if opt.LogDisabled {
+		log.SetOutput(ioutil.Discard)
+	}
 
 	return geziyor
 }
