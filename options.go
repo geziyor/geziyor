@@ -21,4 +21,10 @@ type Options struct {
 	// Memory Cache: httpcache.NewMemoryCache()
 	// Disk Cache:   diskcache.New(".cache")
 	Cache httpcache.Cache
+
+	// Concurrent requests limit
+	ConcurrentRequests int
+
+	// Concurrent requests per domain limit
+	ConcurrentRequestsPerDomain int
 }

@@ -12,7 +12,7 @@ func TestGeziyor_Simple(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		ParseFunc: func(r *geziyor.Response) {
-			fmt.Println(string(r.Body))
+			fmt.Println(r.Doc.Text())
 		},
 	}).Start()
 }
