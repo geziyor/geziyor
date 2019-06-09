@@ -57,6 +57,9 @@ func NewGeziyor(opt Options) *Geziyor {
 			hostSems map[string]chan struct{}
 		}{hostSems: make(map[string]chan struct{})}
 	}
+	if opt.UserAgent == "" {
+		geziyor.opt.UserAgent = "Geziyor 1.0"
+	}
 
 	return geziyor
 }
@@ -96,15 +99,16 @@ func (g *Geziyor) Do(req *http.Request) {
 	g.wg.Add(1)
 	defer g.wg.Done()
 
-	if !checkURL(req.URL, g) {
+	if !g.checkURL(req.URL) {
 		return
 	}
 
 	// Modify Request
 	req.Header.Set("Accept-Charset", "utf-8")
+	req.Header.Set("User-Agent", g.opt.UserAgent)
 
 	// Acquire Semaphore
-	g.acquire(req)
+	g.acquireSem(req)
 
 	// Log
 	log.Println("Fetching: ", req.URL.String())
@@ -116,7 +120,7 @@ func (g *Geziyor) Do(req *http.Request) {
 	}
 	if err != nil {
 		log.Printf("Response error: %v\n", err)
-		g.release(req)
+		g.releaseSem(req)
 		return
 	}
 
@@ -124,7 +128,7 @@ func (g *Geziyor) Do(req *http.Request) {
 	reader, err := charset.NewReader(resp.Body, resp.Header.Get("Content-Type"))
 	if err != nil {
 		log.Printf("Determine encoding error: %v\n", err)
-		g.release(req)
+		g.releaseSem(req)
 		return
 	}
 
@@ -132,12 +136,12 @@ func (g *Geziyor) Do(req *http.Request) {
 	body, err := ioutil.ReadAll(reader)
 	if err != nil {
 		log.Printf("Reading Body error: %v\n", err)
-		g.release(req)
+		g.releaseSem(req)
 		return
 	}
 
 	// Release Semaphore
-	g.release(req)
+	g.releaseSem(req)
 
 	// Create Document
 	doc, _ := goquery.NewDocumentFromReader(bytes.NewReader(body))
@@ -159,7 +163,7 @@ func (g *Geziyor) Do(req *http.Request) {
 	time.Sleep(time.Millisecond)
 }
 
-func (g *Geziyor) acquire(req *http.Request) {
+func (g *Geziyor) acquireSem(req *http.Request) {
 	if g.opt.ConcurrentRequests != 0 {
 		g.semGlobal <- struct{}{}
 	}
@@ -178,7 +182,7 @@ func (g *Geziyor) acquire(req *http.Request) {
 	}
 }
 
-func (g *Geziyor) release(req *http.Request) {
+func (g *Geziyor) releaseSem(req *http.Request) {
 	if g.opt.ConcurrentRequests != 0 {
 		<-g.semGlobal
 	}
@@ -187,7 +191,7 @@ func (g *Geziyor) release(req *http.Request) {
 	}
 }
 
-func checkURL(parsedURL *url.URL, g *Geziyor) bool {
+func (g *Geziyor) checkURL(parsedURL *url.URL) bool {
 	rawURL := parsedURL.String()
 	// Check for allowed domains
 	if len(g.opt.AllowedDomains) != 0 && !contains(g.opt.AllowedDomains, parsedURL.Host) {

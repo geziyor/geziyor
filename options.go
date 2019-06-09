@@ -27,4 +27,7 @@ type Options struct {
 
 	// Concurrent requests per domain limit
 	ConcurrentRequestsPerDomain int
+
+	// User Agent
+	UserAgent string
 }
