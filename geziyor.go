@@ -7,6 +7,7 @@ import (
 	"golang.org/x/net/html/charset"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -30,6 +31,7 @@ type Geziyor struct {
 
 func init() {
 	log.SetOutput(os.Stdout)
+	rand.Seed(time.Now().UnixNano())
 }
 
 // NewGeziyor creates new Geziyor with default values.
@@ -109,6 +111,15 @@ func (g *Geziyor) Do(req *http.Request) {
 
 	// Acquire Semaphore
 	g.acquireSem(req)
+
+	// Request Delay
+	if g.opt.RequestDelayRandomize {
+		min := float64(g.opt.RequestDelay) * 0.5
+		max := float64(g.opt.RequestDelay) * 1.5
+		time.Sleep(time.Duration(rand.Intn(int(max-min)) + int(min)))
+	} else {
+		time.Sleep(g.opt.RequestDelay)
+	}
 
 	// Log
 	log.Println("Fetching: ", req.URL.String())

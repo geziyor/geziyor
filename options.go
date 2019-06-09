@@ -10,10 +10,13 @@ type Options struct {
 	// AllowedDomains is domains that are allowed to make requests
 	// If empty, any domain is allowed
 	AllowedDomains []string
+
 	// First requests will made to this url array. (Concurrently)
 	StartURLs []string
+
 	// ParseFunc is callback of StartURLs response.
 	ParseFunc func(response *Response)
+
 	// Timeout is global request timeout
 	Timeout time.Duration
 
@@ -24,10 +27,14 @@ type Options struct {
 
 	// Concurrent requests limit
 	ConcurrentRequests int
-
 	// Concurrent requests per domain limit
 	ConcurrentRequestsPerDomain int
 
 	// User Agent
 	UserAgent string
+
+	// Request delays
+	RequestDelay time.Duration
+	// RequestDelayRandomize uses random interval between 0.5 * RequestDelay and 1.5 * RequestDelay
+	RequestDelayRandomize bool
 }
