@@ -22,7 +22,8 @@ func TestGeziyor_IP(t *testing.T) {
 		StartURLs: []string{"http://api.ipify.org"},
 		Cache:     httpcache.NewMemoryCache(),
 		ParseFunc: func(r *geziyor.Response) {
-			fmt.Println(string(r.Body))
+			fmt.Println(r.Doc.Text())
+			r.Exports <- r.Doc.Text()
 			r.Geziyor.Get("http://api.ipify.org")
 		},
 	})

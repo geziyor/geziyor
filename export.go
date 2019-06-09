@@ -23,6 +23,8 @@ func Export(response *Response) {
 
 	for res := range response.Exports {
 		//fmt.Println(res)
-		_ = json.NewEncoder(file).Encode(res)
+		encoder := json.NewEncoder(file)
+		encoder.SetEscapeHTML(false)
+		encoder.Encode(res)
 	}
 }

@@ -14,7 +14,7 @@ type Response struct {
 	Doc  *goquery.Document
 
 	Geziyor *Geziyor
-	Exports chan map[string]interface{}
+	Exports chan interface{}
 }
 
 // JoinURL joins base response URL and provided relative URL.

@@ -148,7 +148,7 @@ func (g *Geziyor) Do(req *http.Request) {
 		Body:     body,
 		Doc:      doc,
 		Geziyor:  g,
-		Exports:  make(chan map[string]interface{}, 1),
+		Exports:  make(chan interface{}, 1),
 	}
 
 	// Export Function
