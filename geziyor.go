@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -80,29 +81,34 @@ func (g *Geziyor) Start() {
 }
 
 // Get issues a GET to the specified URL.
-func (g *Geziyor) Get(url string) {
+func (g *Geziyor) Get(url string, callbacks ...func(resp *Response)) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(req)
+	g.Do(req, callbacks...)
 }
 
 // Head issues a HEAD to the specified URL
-func (g *Geziyor) Head(url string) {
+func (g *Geziyor) Head(url string, callbacks ...func(resp *Response)) {
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(req)
+	g.Do(req, callbacks...)
 }
 
 // Do sends an HTTP request
-func (g *Geziyor) Do(req *http.Request) {
+func (g *Geziyor) Do(req *http.Request, callbacks ...func(resp *Response)) {
 	g.wg.Add(1)
 	defer g.wg.Done()
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println(string(debug.Stack()))
+		}
+	}()
 
 	if !g.checkURL(req.URL) {
 		return
@@ -157,23 +163,30 @@ func (g *Geziyor) Do(req *http.Request) {
 	// Release Semaphore
 	g.releaseSem(req)
 
-	// Create Document
-	doc, _ := goquery.NewDocumentFromReader(bytes.NewReader(body))
-
 	// Create response
 	response := Response{
 		Response: resp,
 		Body:     body,
-		Doc:      doc,
 		Geziyor:  g,
 		Exports:  make(chan interface{}, 1),
+	}
+
+	// Create HTML Document
+	if response.isHTML() {
+		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(body))
 	}
 
 	// Export Function
 	go Export(&response)
 
 	// ParseFunc response
-	g.opt.ParseFunc(&response)
+	if len(callbacks) == 0 && g.opt.ParseFunc != nil {
+		g.opt.ParseFunc(&response)
+	} else {
+		for _, callback := range callbacks {
+			callback(&response)
+		}
+	}
 	time.Sleep(time.Millisecond)
 }
 
