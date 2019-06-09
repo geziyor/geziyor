@@ -2,9 +2,9 @@ package geziyor
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fpfeng/httpcache"
+	"golang.org/x/net/html/charset"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -89,6 +89,9 @@ func (g *Geziyor) Do(req *http.Request) {
 	// Log
 	log.Println("Fetching: ", req.URL.String())
 
+	// Modify Request
+	req.Header.Set("Accept-Charset", "utf-8")
+
 	// Do request
 	resp, err := g.client.Do(req)
 	if resp != nil {
@@ -99,10 +102,17 @@ func (g *Geziyor) Do(req *http.Request) {
 		return
 	}
 
-	// Read body
-	body, err := ioutil.ReadAll(resp.Body)
+	// Start reading body and determine encoding
+	reader, err := charset.NewReader(resp.Body, resp.Header.Get("Content-Type"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "reading body error: %v\n", err)
+		log.Printf("Determine encoding error: %v\n", err)
+		return
+	}
+
+	// Continue reading body
+	body, err := ioutil.ReadAll(reader)
+	if err != nil {
+		log.Printf("Reading Body error: %v\n", err)
 		return
 	}
 
