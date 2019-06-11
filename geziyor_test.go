@@ -45,12 +45,14 @@ func quotesParse(r *geziyor.Response) {
 	r.DocHTML.Find("div.quote").Each(func(i int, s *goquery.Selection) {
 		// Export Data
 		r.Exports <- map[string]interface{}{
+			"number": i,
 			"text":   s.Find("span.text").Text(),
 			"author": s.Find("small.author").Text(),
 			"tags": s.Find("div.tags > a.tag").Map(func(_ int, s *goquery.Selection) string {
 				return s.Text()
 			}),
 		}
+		//r.Exports <- []string{s.Find("span.text").Text(), s.Find("small.author").Text()}
 	})
 
 	// Next Page

@@ -19,7 +19,7 @@ import (
 
 // Exporter interface is for extracting data to external resources
 type Exporter interface {
-	Export(exports *Response)
+	Export(response *Response)
 }
 
 // Geziyor is our main scraper type

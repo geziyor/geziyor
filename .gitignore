@@ -18,4 +18,4 @@
 .idea/
 
 # Output files
-out.json
+out.*
