@@ -73,7 +73,7 @@ func NewGeziyor(opt Options) *Geziyor {
 // Start starts scraping
 func (g *Geziyor) Start() {
 	for _, startURL := range g.opt.StartURLs {
-		go g.Get(startURL)
+		go g.Get(startURL, g.opt.ParseFunc)
 	}
 
 	time.Sleep(time.Millisecond)
@@ -81,27 +81,27 @@ func (g *Geziyor) Start() {
 }
 
 // Get issues a GET to the specified URL.
-func (g *Geziyor) Get(url string, callbacks ...func(resp *Response)) {
+func (g *Geziyor) Get(url string, callback func(resp *Response)) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(req, callbacks...)
+	g.Do(req, callback)
 }
 
 // Head issues a HEAD to the specified URL
-func (g *Geziyor) Head(url string, callbacks ...func(resp *Response)) {
+func (g *Geziyor) Head(url string, callback func(resp *Response)) {
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(req, callbacks...)
+	g.Do(req, callback)
 }
 
 // Do sends an HTTP request
-func (g *Geziyor) Do(req *http.Request, callbacks ...func(resp *Response)) {
+func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 	g.wg.Add(1)
 	defer g.wg.Done()
 	defer func() {
@@ -179,12 +179,12 @@ func (g *Geziyor) Do(req *http.Request, callbacks ...func(resp *Response)) {
 	// Export Function
 	go Export(&response)
 
-	// ParseFunc response
-	if len(callbacks) == 0 && g.opt.ParseFunc != nil {
-		g.opt.ParseFunc(&response)
+	// Callbacks
+	if callback != nil {
+		callback(&response)
 	} else {
-		for _, callback := range callbacks {
-			callback(&response)
+		if g.opt.ParseFunc != nil {
+			g.opt.ParseFunc(&response)
 		}
 	}
 	time.Sleep(time.Millisecond)

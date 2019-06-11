@@ -21,38 +21,15 @@ Simplest usage
 geziyor.NewGeziyor(geziyor.Options{
     StartURLs: []string{"http://api.ipify.org"},
     ParseFunc: func(r *geziyor.Response) {
-    	fmt.Println(r.Doc.Text())
+        fmt.Println(string(r.Body))
     },
 }).Start()
 ```
 
-Export all quotes and authors to out.json file.
-
-```go
-geziyor := NewGeziyor(Opt{
-    StartURLs: []string{"http://quotes.toscrape.com/"},
-    ParseFunc: func(r *Response) {
-        r.Doc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
-            // Export Data
-            r.Exports <- map[string]interface{}{
-                "text":   s.Find("span.text").Text(),
-                "author": s.Find("small.author").Text(),
-            }
-        })
-
-        // Next Page
-        if href, ok := r.Doc.Find("li.next > a").Attr("href"); ok {
-            go r.Geziyor.Get(r.JoinURL(href))
-        }
-    },
-})
-geziyor.Start()
-```
+## Status
+We highly recommend you to use go modules. As this project is in **development stage** right now and **API is not stable**.
 
 
 ## Installation
 
     go get github.com/geziyor/geziyor
-    
-## Status
-We highly recommend you to use go modules. As this project is in **development stage** right now and **API is not stable**.
