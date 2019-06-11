@@ -40,4 +40,7 @@ type Options struct {
 
 	// Disable logging by setting this true
 	LogDisabled bool
+
+	// For extracting data
+	Exporters []Exporter
 }

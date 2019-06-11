@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fpfeng/httpcache"
+	"github.com/geziyor/geziyor/exporter"
 	"golang.org/x/net/html/charset"
 	"io/ioutil"
 	"log"
@@ -66,6 +67,9 @@ func NewGeziyor(opt Options) *Geziyor {
 	if opt.LogDisabled {
 		log.SetOutput(ioutil.Discard)
 	}
+	if len(opt.Exporters) == 0 {
+		geziyor.opt.Exporters = []Exporter{exporter.JSONExporter{}}
+	}
 
 	return geziyor
 }
@@ -106,7 +110,7 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 	defer g.wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println(string(debug.Stack()))
+			log.Println(r, string(debug.Stack()))
 		}
 	}()
 
@@ -168,7 +172,7 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 		Response: resp,
 		Body:     body,
 		Geziyor:  g,
-		Exports:  make(chan interface{}, 1),
+		Exports:  make(chan interface{}),
 	}
 
 	// Create HTML Document
@@ -176,8 +180,10 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(body))
 	}
 
-	// Export Function
-	go Export(&response)
+	// Export Functions
+	for _, exp := range g.opt.Exporters {
+		go exp.Export(response.Exports)
+	}
 
 	// Callbacks
 	if callback != nil {

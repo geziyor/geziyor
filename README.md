@@ -7,9 +7,9 @@ Geziyor is a blazing fast web crawling and web scraping framework, used to crawl
 ## Features
 - 1.000+ Requests/Sec
 - Caching (Memory/Disk)
-- Automatic Data Exporting
+- Automatic Data Exporting (JSON)
 - Limit Concurrency (Global/Per Domain)
-- Request Delays (Constant/Randomized) 
+- Request Delays (Constant/Randomized)
 - Automatic response decoding to UTF-8
 
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for customization. 
