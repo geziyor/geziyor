@@ -6,6 +6,7 @@ import (
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/exporter"
 	"golang.org/x/net/html/charset"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -69,6 +70,9 @@ func NewGeziyor(opt Options) *Geziyor {
 	}
 	if len(opt.Exporters) == 0 {
 		geziyor.opt.Exporters = []Exporter{exporter.JSONExporter{}}
+	}
+	if opt.MaxBodySize == 0 {
+		geziyor.opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
 	}
 
 	return geziyor
@@ -148,8 +152,11 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 		return
 	}
 
+	// Limit response body reading
+	bodyReader := io.LimitReader(resp.Body, g.opt.MaxBodySize)
+
 	// Start reading body and determine encoding
-	reader, err := charset.NewReader(resp.Body, resp.Header.Get("Content-Type"))
+	bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
 	if err != nil {
 		log.Printf("Determine encoding error: %v\n", err)
 		g.releaseSem(req)
@@ -157,7 +164,7 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 	}
 
 	// Continue reading body
-	body, err := ioutil.ReadAll(reader)
+	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
 		log.Printf("Reading Body error: %v\n", err)
 		g.releaseSem(req)

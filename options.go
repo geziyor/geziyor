@@ -43,4 +43,7 @@ type Options struct {
 
 	// For extracting data
 	Exporters []Exporter
+
+	// Max body reading size in bytes
+	MaxBodySize int64
 }
