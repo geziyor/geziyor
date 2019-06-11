@@ -3,6 +3,7 @@ package exporter
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/geziyor/geziyor"
 	"os"
 	"sync"
 )
@@ -17,7 +18,7 @@ type JSONExporter struct {
 }
 
 // Export exports response data as JSON streaming file
-func (e JSONExporter) Export(exports chan interface{}) {
+func (e JSONExporter) Export(response *geziyor.Response) {
 
 	// Default Filename
 	if e.Filename == "" {
@@ -35,7 +36,7 @@ func (e JSONExporter) Export(exports chan interface{}) {
 	})
 
 	// Export data as responses came
-	for res := range exports {
+	for res := range response.Exports {
 		encoder := json.NewEncoder(e.file)
 		encoder.SetEscapeHTML(e.EscapeHTML)
 		encoder.Encode(res)

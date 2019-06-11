@@ -5,6 +5,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor"
+	"github.com/geziyor/geziyor/exporter"
 	"math/rand"
 	"testing"
 	"time"
@@ -36,6 +37,7 @@ func TestQuotes(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: quotesParse,
+		Exporters: []geziyor.Exporter{exporter.JSONExporter{}},
 	}).Start()
 }
 

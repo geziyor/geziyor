@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fpfeng/httpcache"
-	"github.com/geziyor/geziyor/exporter"
 	"golang.org/x/net/html/charset"
 	"io"
 	"io/ioutil"
@@ -17,6 +16,11 @@ import (
 	"sync"
 	"time"
 )
+
+// Exporter interface is for extracting data to external resources
+type Exporter interface {
+	Export(exports *Response)
+}
 
 // Geziyor is our main scraper type
 type Geziyor struct {
@@ -67,9 +71,6 @@ func NewGeziyor(opt Options) *Geziyor {
 	}
 	if opt.LogDisabled {
 		log.SetOutput(ioutil.Discard)
-	}
-	if len(opt.Exporters) == 0 {
-		geziyor.opt.Exporters = []Exporter{exporter.JSONExporter{}}
 	}
 	if opt.MaxBodySize == 0 {
 		geziyor.opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
@@ -189,7 +190,15 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 
 	// Export Functions
 	for _, exp := range g.opt.Exporters {
-		go exp.Export(response.Exports)
+		go exp.Export(&response)
+	}
+
+	// Drain exports chan if no exporters added
+	if len(g.opt.Exporters) == 0 {
+		go func() {
+			for range response.Exports {
+			}
+		}()
 	}
 
 	// Callbacks
