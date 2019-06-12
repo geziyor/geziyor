@@ -15,7 +15,7 @@ type Options struct {
 	StartURLs []string
 
 	// StartRequestsFunc called on scraper start
-	StartRequestsFunc func() []*Request
+	StartRequestsFunc func(g *Geziyor)
 
 	// ParseFunc is callback of StartURLs response.
 	ParseFunc func(r *Response)

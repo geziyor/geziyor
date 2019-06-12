@@ -14,6 +14,9 @@ Geziyor is a blazing fast web crawling and web scraping framework, used to crawl
 
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for customization. 
 
+## Status
+We highly recommend you to use go modules. As this project is in **development stage** right now and **API is not stable**.
+
 ## Usage
 Simplest usage 
 
@@ -25,10 +28,6 @@ geziyor.NewGeziyor(geziyor.Options{
     },
 }).Start()
 ```
-
-## Status
-We highly recommend you to use go modules. As this project is in **development stage** right now and **API is not stable**.
-
 
 ## Installation
 

@@ -92,9 +92,9 @@ func TestRandomDelay(t *testing.T) {
 
 func TestStartRequestsFunc(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
-		StartRequestsFunc: func() []*geziyor.Request {
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			req, _ := http.NewRequest("GET", "http://quotes.toscrape.com/", nil)
-			return []*geziyor.Request{{Request: req}}
+			g.Requests <- &geziyor.Request{Request: req}
 		},
 		ParseFunc: func(r *geziyor.Response) {
 			r.Exports <- []string{r.Status}
@@ -108,16 +108,14 @@ func TestAlmaany(t *testing.T) {
 
 	geziyor.NewGeziyor(geziyor.Options{
 		AllowedDomains: []string{"www.almaany.com"},
-		StartRequestsFunc: func() []*geziyor.Request {
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			base := "http://www.almaany.com/suggest.php?term=%c%c&lang=turkish&t=d"
-			var requests []*geziyor.Request
 			for _, c1 := range alphabet {
 				for _, c2 := range alphabet {
 					req, _ := http.NewRequest("GET", fmt.Sprintf(base, c1, c2), nil)
-					requests = append(requests, &geziyor.Request{Request: req, Meta: map[string]interface{}{"word": string(c1) + string(c2)}})
+					g.Requests <- &geziyor.Request{Request: req, Meta: map[string]interface{}{"word": string(c1) + string(c2)}}
 				}
 			}
-			return requests
 		},
 		ConcurrentRequests: 10,
 		ParseFunc:          parseAlmaany,

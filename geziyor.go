@@ -28,6 +28,8 @@ type Geziyor struct {
 	wg     sync.WaitGroup
 	opt    Options
 
+	Requests chan *Request
+
 	visitedURLS []string
 	semGlobal   chan struct{}
 	semHosts    struct {
@@ -48,7 +50,8 @@ func NewGeziyor(opt Options) *Geziyor {
 		client: &http.Client{
 			Timeout: time.Second * 180, // Google's timeout
 		},
-		opt: opt,
+		Requests: make(chan *Request),
+		opt:      opt,
 	}
 
 	if opt.Cache != nil {
@@ -88,9 +91,12 @@ func (g *Geziyor) Start() {
 			go g.Get(startURL, g.opt.ParseFunc)
 		}
 	} else {
-		for _, req := range g.opt.StartRequestsFunc() {
-			go g.Do(req, g.opt.ParseFunc)
-		}
+		go func() {
+			for req := range g.Requests {
+				go g.Do(req, g.opt.ParseFunc)
+			}
+		}()
+		g.opt.StartRequestsFunc(g)
 	}
 
 	time.Sleep(time.Millisecond)
@@ -190,12 +196,12 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(body))
 	}
 
-	// Export Functions
+	// Exporter functions
 	for _, exp := range g.opt.Exporters {
 		go exp.Export(&response)
 	}
 
-	// Drain exports chan if no exporters added
+	// Drain exports chan if no exporter functions added
 	if len(g.opt.Exporters) == 0 {
 		go func() {
 			for range response.Exports {
