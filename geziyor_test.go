@@ -1,6 +1,7 @@
 package geziyor_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fpfeng/httpcache"
@@ -91,13 +92,52 @@ func TestRandomDelay(t *testing.T) {
 
 func TestStartRequestsFunc(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
-		StartRequestsFunc: func() []*http.Request {
+		StartRequestsFunc: func() []*geziyor.Request {
 			req, _ := http.NewRequest("GET", "http://quotes.toscrape.com/", nil)
-			return []*http.Request{req}
+			return []*geziyor.Request{{Request: req}}
 		},
 		ParseFunc: func(r *geziyor.Response) {
 			r.Exports <- []string{r.Status}
 		},
 		Exporters: []geziyor.Exporter{exporter.CSVExporter{}},
 	}).Start()
+}
+
+func TestAlmaany(t *testing.T) {
+	alphabet := "ab"
+
+	geziyor.NewGeziyor(geziyor.Options{
+		AllowedDomains: []string{"www.almaany.com"},
+		StartRequestsFunc: func() []*geziyor.Request {
+			base := "http://www.almaany.com/suggest.php?term=%c%c&lang=turkish&t=d"
+			var requests []*geziyor.Request
+			for _, c1 := range alphabet {
+				for _, c2 := range alphabet {
+					req, _ := http.NewRequest("GET", fmt.Sprintf(base, c1, c2), nil)
+					requests = append(requests, &geziyor.Request{Request: req, Meta: map[string]interface{}{"word": string(c1) + string(c2)}})
+				}
+			}
+			return requests
+		},
+		ConcurrentRequests: 10,
+		ParseFunc:          parseAlmaany,
+		Exporters:          []geziyor.Exporter{exporter.CSVExporter{}},
+	}).Start()
+
+}
+
+func parseAlmaany(r *geziyor.Response) {
+	var words []string
+	_ = json.Unmarshal(r.Body, &words)
+	r.Exports <- words
+
+	if len(words) == 20 {
+		alphabet := "abcde"
+		base := "http://www.almaany.com/suggest.php?term=%s%c&lang=turkish&t=d"
+
+		for _, c := range alphabet {
+			req, _ := http.NewRequest("GET", fmt.Sprintf(base, r.Meta["word"], c), nil)
+			go r.Geziyor.Do(&geziyor.Request{Request: req, Meta: map[string]interface{}{"word": r.Meta["word"].(string) + string(c)}}, parseAlmaany)
+		}
+	}
 }

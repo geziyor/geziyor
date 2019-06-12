@@ -2,7 +2,6 @@ package geziyor
 
 import (
 	"github.com/fpfeng/httpcache"
-	"net/http"
 	"time"
 )
 
@@ -16,7 +15,7 @@ type Options struct {
 	StartURLs []string
 
 	// StartRequestsFunc called on scraper start
-	StartRequestsFunc func() []*http.Request
+	StartRequestsFunc func() []*Request
 
 	// ParseFunc is callback of StartURLs response.
 	ParseFunc func(r *Response)

@@ -13,6 +13,7 @@ type Response struct {
 	*http.Response
 	Body    []byte
 	DocHTML *goquery.Document
+	Meta    map[string]interface{}
 
 	Geziyor *Geziyor
 	Exports chan interface{}

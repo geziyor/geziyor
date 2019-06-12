@@ -46,7 +46,7 @@ func init() {
 func NewGeziyor(opt Options) *Geziyor {
 	geziyor := &Geziyor{
 		client: &http.Client{
-			Timeout: time.Second * 60,
+			Timeout: time.Second * 180, // Google's timeout
 		},
 		opt: opt,
 	}
@@ -106,7 +106,7 @@ func (g *Geziyor) Get(url string, callback func(resp *Response)) {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(req, callback)
+	g.Do(&Request{Request: req}, callback)
 }
 
 // Head issues a HEAD to the specified URL
@@ -116,11 +116,11 @@ func (g *Geziyor) Head(url string, callback func(resp *Response)) {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(req, callback)
+	g.Do(&Request{Request: req}, callback)
 }
 
 // Do sends an HTTP request
-func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
+func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 	g.wg.Add(1)
 	defer g.wg.Done()
 	defer func() {
@@ -139,23 +139,14 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 	req.Header.Set("Accept-Language", "en")
 	req.Header.Set("User-Agent", g.opt.UserAgent)
 
-	// Acquire Semaphore
 	g.acquireSem(req)
 
-	// Request Delay
-	if g.opt.RequestDelayRandomize {
-		min := float64(g.opt.RequestDelay) * 0.5
-		max := float64(g.opt.RequestDelay) * 1.5
-		time.Sleep(time.Duration(rand.Intn(int(max-min)) + int(min)))
-	} else {
-		time.Sleep(g.opt.RequestDelay)
-	}
+	g.delay()
 
-	// Log
 	log.Println("Fetching: ", req.URL.String())
 
 	// Do request
-	resp, err := g.client.Do(req)
+	resp, err := g.client.Do(req.Request)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
@@ -178,7 +169,6 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 		}
 	}
 
-	// Continue reading body
 	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
 		log.Printf("Reading Body error: %v\n", err)
@@ -186,18 +176,16 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 		return
 	}
 
-	// Release Semaphore
 	g.releaseSem(req)
 
-	// Create response
 	response := Response{
 		Response: resp,
 		Body:     body,
+		Meta:     req.Meta,
 		Geziyor:  g,
 		Exports:  make(chan interface{}),
 	}
 
-	// Create HTML Document
 	if response.isHTML() {
 		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(body))
 	}
@@ -226,7 +214,7 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 	time.Sleep(time.Millisecond)
 }
 
-func (g *Geziyor) acquireSem(req *http.Request) {
+func (g *Geziyor) acquireSem(req *Request) {
 	if g.opt.ConcurrentRequests != 0 {
 		g.semGlobal <- struct{}{}
 	}
@@ -245,7 +233,7 @@ func (g *Geziyor) acquireSem(req *http.Request) {
 	}
 }
 
-func (g *Geziyor) releaseSem(req *http.Request) {
+func (g *Geziyor) releaseSem(req *Request) {
 	if g.opt.ConcurrentRequests != 0 {
 		<-g.semGlobal
 	}
@@ -270,6 +258,16 @@ func (g *Geziyor) checkURL(parsedURL *url.URL) bool {
 	g.visitedURLS = append(g.visitedURLS, rawURL)
 
 	return true
+}
+
+func (g *Geziyor) delay() {
+	if g.opt.RequestDelayRandomize {
+		min := float64(g.opt.RequestDelay) * 0.5
+		max := float64(g.opt.RequestDelay) * 1.5
+		time.Sleep(time.Duration(rand.Intn(int(max-min)) + int(min)))
+	} else {
+		time.Sleep(g.opt.RequestDelay)
+	}
 }
 
 // contains checks whether []string contains string
