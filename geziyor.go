@@ -157,11 +157,13 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 	bodyReader := io.LimitReader(resp.Body, g.opt.MaxBodySize)
 
 	// Start reading body and determine encoding
-	bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
-	if err != nil {
-		log.Printf("Determine encoding error: %v\n", err)
-		g.releaseSem(req)
-		return
+	if !g.opt.CharsetDetectDisabled {
+		bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
+		if err != nil {
+			log.Printf("Determine encoding error: %v\n", err)
+			g.releaseSem(req)
+			return
+		}
 	}
 
 	// Continue reading body

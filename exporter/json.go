@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/geziyor/geziyor"
+	"log"
 	"os"
 	"sync"
 )
 
 // JSONExporter exports response data as JSON streaming file
 type JSONExporter struct {
-	Filename   string
+	FileName   string
 	EscapeHTML bool
 
 	file *os.File
@@ -20,14 +21,14 @@ type JSONExporter struct {
 // Export exports response data as JSON streaming file
 func (e JSONExporter) Export(response *geziyor.Response) {
 
-	// Default Filename
-	if e.Filename == "" {
-		e.Filename = "out.json"
+	// Default filename
+	if e.FileName == "" {
+		e.FileName = "out.json"
 	}
 
-	// Create File
+	// Create file
 	e.once.Do(func() {
-		newFile, err := os.OpenFile(e.Filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		newFile, err := os.OpenFile(e.FileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "output file creation error: %v", err)
 			return
@@ -39,6 +40,8 @@ func (e JSONExporter) Export(response *geziyor.Response) {
 	for res := range response.Exports {
 		encoder := json.NewEncoder(e.file)
 		encoder.SetEscapeHTML(e.EscapeHTML)
-		encoder.Encode(res)
+		if err := encoder.Encode(res); err != nil {
+			log.Printf("JSON encoding error on exporter: %v\n", err)
+		}
 	}
 }

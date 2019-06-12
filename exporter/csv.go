@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/geziyor/geziyor"
+	"log"
 	"os"
 	"reflect"
 	"sync"
@@ -11,7 +12,7 @@ import (
 
 // CSVExporter exports response data as CSV streaming file
 type CSVExporter struct {
-	Filename string
+	FileName string
 
 	once   sync.Once
 	file   *os.File
@@ -20,14 +21,14 @@ type CSVExporter struct {
 
 func (e CSVExporter) Export(response *geziyor.Response) {
 
-	// Default Filename
-	if e.Filename == "" {
-		e.Filename = "out.csv"
+	// Default filename
+	if e.FileName == "" {
+		e.FileName = "out.csv"
 	}
 
-	// Create File
+	// Create file
 	e.once.Do(func() {
-		newFile, err := os.OpenFile(e.Filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+		newFile, err := os.OpenFile(e.FileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "output file creation error: %v", err)
 			return
@@ -40,22 +41,27 @@ func (e CSVExporter) Export(response *geziyor.Response) {
 	for res := range response.Exports {
 		var values []string
 
+		// Detect type and extract CSV values
 		val := reflect.ValueOf(res)
 		switch val.Kind() {
-		// TODO: Map type support is temporary. Ordering is wrong. Needs to be sorted by map keys (CSV headers).
-		case reflect.Map:
-			iter := val.MapRange()
-			for iter.Next() {
-				values = append(values, fmt.Sprint(iter.Value()))
-			}
 
 		case reflect.Slice:
 			for i := 0; i < val.Len(); i++ {
 				values = append(values, fmt.Sprint(val.Index(i)))
 			}
+
+		// TODO: Map type support is incomplete. Ordering is wrong. Needs to be sorted by map keys (CSV headers).
+		case reflect.Map:
+			iter := val.MapRange()
+			for iter.Next() {
+				values = append(values, fmt.Sprint(iter.Value()))
+			}
 		}
 
-		e.writer.Write(values)
+		// Write to file
+		if err := e.writer.Write(values); err != nil {
+			log.Printf("CSV writing error on exporter: %v\n", err)
+		}
 		e.writer.Flush()
 	}
 }

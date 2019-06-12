@@ -46,4 +46,7 @@ type Options struct {
 
 	// Max body reading size in bytes
 	MaxBodySize int64
+
+	// Charset Detection disable
+	CharsetDetectDisabled bool
 }
