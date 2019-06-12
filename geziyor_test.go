@@ -54,6 +54,7 @@ func quotesParse(r *geziyor.Response) {
 				return s.Text()
 			}),
 		}
+		// Or, for CSV
 		//r.Exports <- []string{s.Find("span.text").Text(), s.Find("small.author").Text()}
 	})
 
@@ -97,9 +98,11 @@ func TestStartRequestsFunc(t *testing.T) {
 			g.Requests <- &geziyor.Request{Request: req}
 		},
 		ParseFunc: func(r *geziyor.Response) {
-			r.Exports <- []string{r.Status}
+			r.DocHTML.Find("a").Each(func(_ int, s *goquery.Selection) {
+				r.Exports <- s.AttrOr("href", "")
+			})
 		},
-		Exporters: []geziyor.Exporter{exporter.CSVExporter{}},
+		Exporters: []geziyor.Exporter{exporter.JSONExporter{}},
 	}).Start()
 }
 
