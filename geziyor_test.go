@@ -7,6 +7,7 @@ import (
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/exporter"
 	"math/rand"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -63,20 +64,20 @@ func quotesParse(r *geziyor.Response) {
 
 func TestLinks(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
-		AllowedDomains: []string{"quotes.toscrape.com"},
-		StartURLs:      []string{"http://quotes.toscrape.com/"},
+		AllowedDomains: []string{"books.toscrape.com"},
+		StartURLs:      []string{"http://books.toscrape.com/"},
 		ParseFunc:      linksParse,
+		Exporters:      []geziyor.Exporter{exporter.CSVExporter{}},
 	}).Start()
 }
 
 func linksParse(r *geziyor.Response) {
-	//r.Exports <- map[string]interface{}{"href": r.Request.URL.String()}
+	r.Exports <- []string{r.Request.URL.String()}
 	r.DocHTML.Find("a").Each(func(i int, s *goquery.Selection) {
 		if href, ok := s.Attr("href"); ok {
 			go r.Geziyor.Get(r.JoinURL(href), linksParse)
 		}
 	})
-
 }
 
 func TestRandomDelay(t *testing.T) {
@@ -86,4 +87,17 @@ func TestRandomDelay(t *testing.T) {
 	max := float64(delay) * 1.5
 	randomDelay := rand.Intn(int(max-min)) + int(min)
 	fmt.Println(time.Duration(randomDelay))
+}
+
+func TestStartRequestsFunc(t *testing.T) {
+	geziyor.NewGeziyor(geziyor.Options{
+		StartRequestsFunc: func() []*http.Request {
+			req, _ := http.NewRequest("GET", "http://quotes.toscrape.com/", nil)
+			return []*http.Request{req}
+		},
+		ParseFunc: func(r *geziyor.Response) {
+			r.Exports <- []string{r.Status}
+		},
+		Exporters: []geziyor.Exporter{exporter.CSVExporter{}},
+	}).Start()
 }

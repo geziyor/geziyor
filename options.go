@@ -2,6 +2,7 @@ package geziyor
 
 import (
 	"github.com/fpfeng/httpcache"
+	"net/http"
 	"time"
 )
 
@@ -14,8 +15,11 @@ type Options struct {
 	// First requests will made to this url array. (Concurrently)
 	StartURLs []string
 
+	// StartRequestsFunc called on scraper start
+	StartRequestsFunc func() []*http.Request
+
 	// ParseFunc is callback of StartURLs response.
-	ParseFunc func(response *Response)
+	ParseFunc func(r *Response)
 
 	// Timeout is global request timeout
 	Timeout time.Duration

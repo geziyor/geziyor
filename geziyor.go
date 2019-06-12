@@ -81,12 +81,22 @@ func NewGeziyor(opt Options) *Geziyor {
 
 // Start starts scraping
 func (g *Geziyor) Start() {
-	for _, startURL := range g.opt.StartURLs {
-		go g.Get(startURL, g.opt.ParseFunc)
+	log.Println("Scraping Started")
+
+	if g.opt.StartRequestsFunc == nil {
+		for _, startURL := range g.opt.StartURLs {
+			go g.Get(startURL, g.opt.ParseFunc)
+		}
+	} else {
+		for _, req := range g.opt.StartRequestsFunc() {
+			go g.Do(req, g.opt.ParseFunc)
+		}
 	}
 
 	time.Sleep(time.Millisecond)
 	g.wg.Wait()
+
+	log.Println("Scraping Finished")
 }
 
 // Get issues a GET to the specified URL.
@@ -124,7 +134,9 @@ func (g *Geziyor) Do(req *http.Request, callback func(resp *Response)) {
 	}
 
 	// Modify Request
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	req.Header.Set("Accept-Charset", "utf-8")
+	req.Header.Set("Accept-Language", "en")
 	req.Header.Set("User-Agent", g.opt.UserAgent)
 
 	// Acquire Semaphore
