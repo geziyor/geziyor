@@ -14,8 +14,8 @@ type JSONExporter struct {
 	FileName   string
 	EscapeHTML bool
 
-	file *os.File
 	once sync.Once
+	file *os.File
 }
 
 // Export exports response data as JSON streaming file

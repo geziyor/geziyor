@@ -137,60 +137,19 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 	req.Header.Set("Accept-Language", "en")
 	req.Header.Set("User-Agent", g.Opt.UserAgent)
 
-	g.acquireSem(req)
-
-	g.delay()
-
-	log.Println("Fetching: ", req.URL.String())
-
-	// Do request
-	resp, err := g.client.Do(req.Request)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	// Do request and read response
+	response, err := g.doRequest(req)
 	if err != nil {
-		log.Printf("Response error: %v\n", err)
-		g.releaseSem(req)
 		return
-	}
-
-	// Limit response body reading
-	bodyReader := io.LimitReader(resp.Body, g.Opt.MaxBodySize)
-
-	// Start reading body and determine encoding
-	if !g.Opt.CharsetDetectDisabled {
-		bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
-		if err != nil {
-			log.Printf("Determine encoding error: %v\n", err)
-			g.releaseSem(req)
-			return
-		}
-	}
-
-	body, err := ioutil.ReadAll(bodyReader)
-	if err != nil {
-		log.Printf("Reading Body error: %v\n", err)
-		g.releaseSem(req)
-		return
-	}
-
-	g.releaseSem(req)
-
-	response := Response{
-		Response: resp,
-		Body:     body,
-		Meta:     req.Meta,
-		Geziyor:  g,
-		Exports:  make(chan interface{}),
 	}
 
 	if response.isHTML() {
-		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(body))
+		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(response.Body))
 	}
 
 	// Exporter functions
 	for _, exp := range g.Opt.Exporters {
-		go exp.Export(&response)
+		go exp.Export(response)
 	}
 
 	// Drain exports chan if no exporter functions added
@@ -203,13 +162,60 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 
 	// Callbacks
 	if callback != nil {
-		callback(&response)
+		callback(response)
 	} else {
 		if g.Opt.ParseFunc != nil {
-			g.Opt.ParseFunc(&response)
+			g.Opt.ParseFunc(response)
 		}
 	}
 	time.Sleep(time.Millisecond)
+}
+
+func (g *Geziyor) doRequest(req *Request) (*Response, error) {
+	g.acquireSem(req)
+	defer g.releaseSem(req)
+
+	g.delay()
+
+	log.Println("Fetching: ", req.URL.String())
+
+	// Do request
+	resp, err := g.client.Do(req.Request)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+	if err != nil {
+		log.Printf("Response error: %v\n", err)
+		return nil, err
+	}
+
+	// Limit response body reading
+	bodyReader := io.LimitReader(resp.Body, g.Opt.MaxBodySize)
+
+	// Start reading body and determine encoding
+	if !g.Opt.CharsetDetectDisabled {
+		bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
+		if err != nil {
+			log.Printf("Determine encoding error: %v\n", err)
+			return nil, err
+		}
+	}
+
+	body, err := ioutil.ReadAll(bodyReader)
+	if err != nil {
+		log.Printf("Reading Body error: %v\n", err)
+		return nil, err
+	}
+
+	response := Response{
+		Response: resp,
+		Body:     body,
+		Meta:     req.Meta,
+		Geziyor:  g,
+		Exports:  make(chan interface{}),
+	}
+
+	return &response, nil
 }
 
 func (g *Geziyor) acquireSem(req *Request) {
