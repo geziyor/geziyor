@@ -52,4 +52,7 @@ type Options struct {
 
 	// Charset Detection disable
 	CharsetDetectDisabled bool
+
+	// Revisiting same URLs is disabled by default
+	URLRevisitEnabled bool
 }

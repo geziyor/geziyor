@@ -8,4 +8,6 @@ import (
 type Request struct {
 	*http.Request
 	Meta map[string]interface{}
+
+	rendered bool
 }

@@ -2,7 +2,10 @@ package geziyor
 
 import (
 	"bytes"
+	"context"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/cdproto/dom"
+	"github.com/chromedp/chromedp"
 	"github.com/fpfeng/httpcache"
 	"golang.org/x/net/html/charset"
 	"io"
@@ -107,6 +110,17 @@ func (g *Geziyor) Get(url string, callback func(resp *Response)) {
 	g.Do(&Request{Request: req}, callback)
 }
 
+// GetRendered issues GET request using headless browser
+// Opens up a new Chrome instance, makes request, waits for 1 second to render HTML DOM and closed.
+func (g *Geziyor) GetRendered(url string, callback func(resp *Response)) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		log.Printf("Request creating error %v\n", err)
+		return
+	}
+	g.Do(&Request{Request: req, rendered: true}, callback)
+}
+
 // Head issues a HEAD to the specified URL
 func (g *Geziyor) Head(url string, callback func(resp *Response)) {
 	req, err := http.NewRequest("HEAD", url, nil)
@@ -131,14 +145,14 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 		return
 	}
 
-	// Modify Request
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	req.Header.Set("Accept-Charset", "utf-8")
-	req.Header.Set("Accept-Language", "en")
-	req.Header.Set("User-Agent", g.Opt.UserAgent)
-
-	// Do request and read response
-	response, err := g.doRequest(req)
+	// Do request normal or chrome and read response
+	var response *Response
+	var err error
+	if !req.rendered {
+		response, err = g.doRequest(req)
+	} else {
+		response, err = g.doRequestChrome(req)
+	}
 	if err != nil {
 		return
 	}
@@ -176,6 +190,12 @@ func (g *Geziyor) doRequest(req *Request) (*Response, error) {
 	defer g.releaseSem(req)
 
 	g.delay()
+
+	// Modify Request
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	req.Header.Set("Accept-Charset", "utf-8")
+	req.Header.Set("Accept-Language", "en")
+	req.Header.Set("User-Agent", g.Opt.UserAgent)
 
 	log.Println("Fetching: ", req.URL.String())
 
@@ -218,6 +238,44 @@ func (g *Geziyor) doRequest(req *Request) (*Response, error) {
 	return &response, nil
 }
 
+func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
+	g.acquireSem(req)
+	defer g.releaseSem(req)
+
+	g.delay()
+
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	var res string
+
+	if err := chromedp.Run(ctx,
+		chromedp.Navigate(req.URL.String()),
+		chromedp.Sleep(1*time.Second),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			node, err := dom.GetDocument().Do(ctx)
+			if err != nil {
+				return err
+			}
+			res, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
+			return err
+		}),
+	); err != nil {
+		log.Printf("Request getting rendered error: %v\n", err)
+		return nil, err
+	}
+
+	response := &Response{
+		//Response: resp,
+		Body: []byte(res),
+		//Meta:     request.Meta,
+		Geziyor: g,
+		Exports: make(chan interface{}),
+	}
+
+	return response, nil
+}
+
 func (g *Geziyor) acquireSem(req *Request) {
 	if g.Opt.ConcurrentRequests != 0 {
 		g.semGlobal <- struct{}{}
@@ -255,11 +313,13 @@ func (g *Geziyor) checkURL(parsedURL *url.URL) bool {
 	}
 
 	// Check for duplicate requests
-	if contains(g.visitedURLS, rawURL) {
-		//log.Printf("URL already visited %s\n", rawURL)
-		return false
+	if !g.Opt.URLRevisitEnabled {
+		if contains(g.visitedURLS, rawURL) {
+			//log.Printf("URL already visited %s\n", rawURL)
+			return false
+		}
+		g.visitedURLS = append(g.visitedURLS, rawURL)
 	}
-	g.visitedURLS = append(g.visitedURLS, rawURL)
 
 	return true
 }

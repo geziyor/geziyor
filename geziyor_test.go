@@ -138,3 +138,15 @@ func parseAlmaany(r *geziyor.Response) {
 		}
 	}
 }
+
+func TestGetRendered(t *testing.T) {
+	geziyor.NewGeziyor(geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
+		},
+		ParseFunc: func(r *geziyor.Response) {
+			fmt.Println(string(r.Body))
+		},
+		//URLRevisitEnabled: true,
+	}).Start()
+}

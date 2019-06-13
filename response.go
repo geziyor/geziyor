@@ -31,6 +31,9 @@ func (r *Response) JoinURL(relativeURL string) string {
 }
 
 func (r *Response) isHTML() bool {
+	if r.Response == nil {
+		return len(r.Body) != 0
+	}
 	contentType := r.Header.Get("Content-Type")
 	for _, htmlContentType := range []string{"text/html", "application/xhtml+xml", "application/vnd.wap.xhtml+xml"} {
 		if strings.Contains(contentType, htmlContentType) {
