@@ -24,12 +24,10 @@ type Exporter interface {
 
 // Geziyor is our main scraper type
 type Geziyor struct {
-	client *http.Client
-	wg     sync.WaitGroup
-	opt    Options
+	Opt Options
 
-	Requests chan *Request
-
+	client      *http.Client
+	wg          sync.WaitGroup
 	visitedURLS []string
 	semGlobal   chan struct{}
 	semHosts    struct {
@@ -50,8 +48,7 @@ func NewGeziyor(opt Options) *Geziyor {
 		client: &http.Client{
 			Timeout: time.Second * 180, // Google's timeout
 		},
-		Requests: make(chan *Request),
-		opt:      opt,
+		Opt: opt,
 	}
 
 	if opt.Cache != nil {
@@ -70,13 +67,13 @@ func NewGeziyor(opt Options) *Geziyor {
 		}{hostSems: make(map[string]chan struct{})}
 	}
 	if opt.UserAgent == "" {
-		geziyor.opt.UserAgent = "Geziyor 1.0"
+		geziyor.Opt.UserAgent = "Geziyor 1.0"
 	}
 	if opt.LogDisabled {
 		log.SetOutput(ioutil.Discard)
 	}
 	if opt.MaxBodySize == 0 {
-		geziyor.opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
+		geziyor.Opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
 	}
 
 	return geziyor
@@ -86,17 +83,12 @@ func NewGeziyor(opt Options) *Geziyor {
 func (g *Geziyor) Start() {
 	log.Println("Scraping Started")
 
-	if g.opt.StartRequestsFunc == nil {
-		for _, startURL := range g.opt.StartURLs {
-			go g.Get(startURL, g.opt.ParseFunc)
+	if g.Opt.StartRequestsFunc == nil {
+		for _, startURL := range g.Opt.StartURLs {
+			go g.Get(startURL, g.Opt.ParseFunc)
 		}
 	} else {
-		go func() {
-			for req := range g.Requests {
-				go g.Do(req, g.opt.ParseFunc)
-			}
-		}()
-		g.opt.StartRequestsFunc(g)
+		g.Opt.StartRequestsFunc(g)
 	}
 
 	time.Sleep(time.Millisecond)
@@ -143,7 +135,7 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	req.Header.Set("Accept-Charset", "utf-8")
 	req.Header.Set("Accept-Language", "en")
-	req.Header.Set("User-Agent", g.opt.UserAgent)
+	req.Header.Set("User-Agent", g.Opt.UserAgent)
 
 	g.acquireSem(req)
 
@@ -163,10 +155,10 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 	}
 
 	// Limit response body reading
-	bodyReader := io.LimitReader(resp.Body, g.opt.MaxBodySize)
+	bodyReader := io.LimitReader(resp.Body, g.Opt.MaxBodySize)
 
 	// Start reading body and determine encoding
-	if !g.opt.CharsetDetectDisabled {
+	if !g.Opt.CharsetDetectDisabled {
 		bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
 		if err != nil {
 			log.Printf("Determine encoding error: %v\n", err)
@@ -197,12 +189,12 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 	}
 
 	// Exporter functions
-	for _, exp := range g.opt.Exporters {
+	for _, exp := range g.Opt.Exporters {
 		go exp.Export(&response)
 	}
 
 	// Drain exports chan if no exporter functions added
-	if len(g.opt.Exporters) == 0 {
+	if len(g.Opt.Exporters) == 0 {
 		go func() {
 			for range response.Exports {
 			}
@@ -213,24 +205,24 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 	if callback != nil {
 		callback(&response)
 	} else {
-		if g.opt.ParseFunc != nil {
-			g.opt.ParseFunc(&response)
+		if g.Opt.ParseFunc != nil {
+			g.Opt.ParseFunc(&response)
 		}
 	}
 	time.Sleep(time.Millisecond)
 }
 
 func (g *Geziyor) acquireSem(req *Request) {
-	if g.opt.ConcurrentRequests != 0 {
+	if g.Opt.ConcurrentRequests != 0 {
 		g.semGlobal <- struct{}{}
 	}
 
-	if g.opt.ConcurrentRequestsPerDomain != 0 {
+	if g.Opt.ConcurrentRequestsPerDomain != 0 {
 		g.semHosts.RLock()
 		hostSem, exists := g.semHosts.hostSems[req.Host]
 		g.semHosts.RUnlock()
 		if !exists {
-			hostSem = make(chan struct{}, g.opt.ConcurrentRequestsPerDomain)
+			hostSem = make(chan struct{}, g.Opt.ConcurrentRequestsPerDomain)
 			g.semHosts.Lock()
 			g.semHosts.hostSems[req.Host] = hostSem
 			g.semHosts.Unlock()
@@ -240,10 +232,10 @@ func (g *Geziyor) acquireSem(req *Request) {
 }
 
 func (g *Geziyor) releaseSem(req *Request) {
-	if g.opt.ConcurrentRequests != 0 {
+	if g.Opt.ConcurrentRequests != 0 {
 		<-g.semGlobal
 	}
-	if g.opt.ConcurrentRequestsPerDomain != 0 {
+	if g.Opt.ConcurrentRequestsPerDomain != 0 {
 		<-g.semHosts.hostSems[req.Host]
 	}
 }
@@ -251,7 +243,7 @@ func (g *Geziyor) releaseSem(req *Request) {
 func (g *Geziyor) checkURL(parsedURL *url.URL) bool {
 	rawURL := parsedURL.String()
 	// Check for allowed domains
-	if len(g.opt.AllowedDomains) != 0 && !contains(g.opt.AllowedDomains, parsedURL.Host) {
+	if len(g.Opt.AllowedDomains) != 0 && !contains(g.Opt.AllowedDomains, parsedURL.Host) {
 		//log.Printf("Domain not allowed: %s\n", parsedURL.Host)
 		return false
 	}
@@ -267,12 +259,12 @@ func (g *Geziyor) checkURL(parsedURL *url.URL) bool {
 }
 
 func (g *Geziyor) delay() {
-	if g.opt.RequestDelayRandomize {
-		min := float64(g.opt.RequestDelay) * 0.5
-		max := float64(g.opt.RequestDelay) * 1.5
+	if g.Opt.RequestDelayRandomize {
+		min := float64(g.Opt.RequestDelay) * 0.5
+		max := float64(g.Opt.RequestDelay) * 1.5
 		time.Sleep(time.Duration(rand.Intn(int(max-min)) + int(min)))
 	} else {
-		time.Sleep(g.opt.RequestDelay)
+		time.Sleep(g.Opt.RequestDelay)
 	}
 }
 

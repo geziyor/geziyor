@@ -68,18 +68,16 @@ func TestLinks(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
 		AllowedDomains: []string{"books.toscrape.com"},
 		StartURLs:      []string{"http://books.toscrape.com/"},
-		ParseFunc:      linksParse,
-		Exporters:      []geziyor.Exporter{exporter.CSVExporter{}},
+		ParseFunc: func(r *geziyor.Response) {
+			r.Exports <- []string{r.Request.URL.String()}
+			r.DocHTML.Find("a").Each(func(i int, s *goquery.Selection) {
+				if href, ok := s.Attr("href"); ok {
+					go r.Geziyor.Get(r.JoinURL(href), r.Geziyor.Opt.ParseFunc)
+				}
+			})
+		},
+		Exporters: []geziyor.Exporter{exporter.CSVExporter{}},
 	}).Start()
-}
-
-func linksParse(r *geziyor.Response) {
-	r.Exports <- []string{r.Request.URL.String()}
-	r.DocHTML.Find("a").Each(func(i int, s *goquery.Selection) {
-		if href, ok := s.Attr("href"); ok {
-			go r.Geziyor.Get(r.JoinURL(href), linksParse)
-		}
-	})
 }
 
 func TestRandomDelay(t *testing.T) {
@@ -94,8 +92,7 @@ func TestRandomDelay(t *testing.T) {
 func TestStartRequestsFunc(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
-			req, _ := http.NewRequest("GET", "http://quotes.toscrape.com/", nil)
-			g.Requests <- &geziyor.Request{Request: req}
+			go g.Get("http://quotes.toscrape.com/", g.Opt.ParseFunc)
 		},
 		ParseFunc: func(r *geziyor.Response) {
 			r.DocHTML.Find("a").Each(func(_ int, s *goquery.Selection) {
@@ -116,12 +113,11 @@ func TestAlmaany(t *testing.T) {
 			for _, c1 := range alphabet {
 				for _, c2 := range alphabet {
 					req, _ := http.NewRequest("GET", fmt.Sprintf(base, c1, c2), nil)
-					g.Requests <- &geziyor.Request{Request: req, Meta: map[string]interface{}{"word": string(c1) + string(c2)}}
+					go g.Do(&geziyor.Request{Request: req, Meta: map[string]interface{}{"word": string(c1) + string(c2)}}, parseAlmaany)
 				}
 			}
 		},
 		ConcurrentRequests: 10,
-		ParseFunc:          parseAlmaany,
 		Exporters:          []geziyor.Exporter{exporter.CSVExporter{}},
 	}).Start()
 
@@ -133,7 +129,7 @@ func parseAlmaany(r *geziyor.Response) {
 	r.Exports <- words
 
 	if len(words) == 20 {
-		alphabet := "abcde"
+		alphabet := "ab"
 		base := "http://www.almaany.com/suggest.php?term=%s%c&lang=turkish&t=d"
 
 		for _, c := range alphabet {
