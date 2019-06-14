@@ -112,7 +112,6 @@ func (g *Geziyor) Start() {
 		g.Opt.StartRequestsFunc(g)
 	}
 
-	time.Sleep(time.Millisecond)
 	g.wg.Wait()
 
 	log.Println("Scraping Finished")
@@ -206,7 +205,9 @@ func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
 			g.Opt.ParseFunc(response)
 		}
 	}
-	time.Sleep(time.Millisecond)
+
+	// Close exports chan to prevent goroutine leak
+	close(response.Exports)
 }
 
 func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
