@@ -15,7 +15,7 @@ type CSVExporter struct {
 	FileName string
 
 	once   sync.Once
-	file   *os.File
+	mut    sync.Mutex
 	writer *csv.Writer
 }
 
@@ -33,8 +33,7 @@ func (e *CSVExporter) Export(response *geziyor.Response) {
 			fmt.Fprintf(os.Stderr, "output file creation error: %v", err)
 			return
 		}
-		e.file = newFile
-		e.writer = csv.NewWriter(e.file)
+		e.writer = csv.NewWriter(newFile)
 	})
 
 	// Export data as responses came
@@ -59,9 +58,14 @@ func (e *CSVExporter) Export(response *geziyor.Response) {
 		}
 
 		// Write to file
+		e.mut.Lock()
 		if err := e.writer.Write(values); err != nil {
 			log.Printf("CSV writing error on exporter: %v\n", err)
 		}
-		e.writer.Flush()
+		e.mut.Unlock()
 	}
+
+	e.mut.Lock()
+	e.writer.Flush()
+	e.mut.Unlock()
 }

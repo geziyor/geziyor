@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -52,13 +53,27 @@ func init() {
 func NewGeziyor(opt Options) *Geziyor {
 	geziyor := &Geziyor{
 		client: &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: (&net.Dialer{
+					Timeout:   30 * time.Second,
+					KeepAlive: 30 * time.Second,
+					DualStack: true,
+				}).DialContext,
+				MaxIdleConns:          0,    // Default: 100
+				MaxIdleConnsPerHost:   1000, // Default: 2
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+			},
 			Timeout: time.Second * 180, // Google's timeout
 		},
 		Opt: opt,
 	}
 
 	if opt.Cache != nil {
-		geziyor.client.Transport = httpcache.NewTransport(opt.Cache)
+		geziyor.client.Transport = &httpcache.Transport{
+			Transport: geziyor.client.Transport, Cache: opt.Cache, MarkCachedResponses: true}
 	}
 	if opt.Timeout != 0 {
 		geziyor.client.Timeout = opt.Timeout

@@ -14,8 +14,9 @@ type JSONExporter struct {
 	FileName   string
 	EscapeHTML bool
 
-	once sync.Once
-	file *os.File
+	once    sync.Once
+	mut     sync.Mutex
+	encoder *json.Encoder
 }
 
 // Export exports response data as JSON streaming file
@@ -33,15 +34,16 @@ func (e *JSONExporter) Export(response *geziyor.Response) {
 			fmt.Fprintf(os.Stderr, "output file creation error: %v", err)
 			return
 		}
-		e.file = newFile
+		e.encoder = json.NewEncoder(newFile)
+		e.encoder.SetEscapeHTML(e.EscapeHTML)
 	})
 
 	// Export data as responses came
 	for res := range response.Exports {
-		encoder := json.NewEncoder(e.file)
-		encoder.SetEscapeHTML(e.EscapeHTML)
-		if err := encoder.Encode(res); err != nil {
+		e.mut.Lock()
+		if err := e.encoder.Encode(res); err != nil {
 			log.Printf("JSON encoding error on exporter: %v\n", err)
 		}
+		e.mut.Unlock()
 	}
 }
