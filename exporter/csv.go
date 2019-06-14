@@ -19,7 +19,7 @@ type CSVExporter struct {
 	writer *csv.Writer
 }
 
-func (e CSVExporter) Export(response *geziyor.Response) {
+func (e *CSVExporter) Export(response *geziyor.Response) {
 
 	// Default filename
 	if e.FileName == "" {

@@ -1,14 +1,12 @@
 package geziyor_test
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/exporter"
 	"math/rand"
-	"net/http"
 	"testing"
 	"time"
 )
@@ -39,7 +37,7 @@ func TestQuotes(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: quotesParse,
-		Exporters: []geziyor.Exporter{exporter.JSONExporter{}},
+		Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
 	}).Start()
 }
 
@@ -54,8 +52,6 @@ func quotesParse(r *geziyor.Response) {
 				return s.Text()
 			}),
 		}
-		// Or, for CSV
-		//r.Exports <- []string{s.Find("span.text").Text(), s.Find("small.author").Text()}
 	})
 
 	// Next Page
@@ -72,11 +68,11 @@ func TestLinks(t *testing.T) {
 			r.Exports <- []string{r.Request.URL.String()}
 			r.DocHTML.Find("a").Each(func(i int, s *goquery.Selection) {
 				if href, ok := s.Attr("href"); ok {
-					go r.Geziyor.Get(r.JoinURL(href), r.Geziyor.Opt.ParseFunc)
+					r.Geziyor.Get(r.JoinURL(href), r.Geziyor.Opt.ParseFunc)
 				}
 			})
 		},
-		Exporters: []geziyor.Exporter{exporter.CSVExporter{}},
+		Exporters: []geziyor.Exporter{&exporter.CSVExporter{}},
 	}).Start()
 }
 
@@ -92,51 +88,15 @@ func TestRandomDelay(t *testing.T) {
 func TestStartRequestsFunc(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
-			go g.Get("http://quotes.toscrape.com/", g.Opt.ParseFunc)
+			g.Get("http://quotes.toscrape.com/", g.Opt.ParseFunc)
 		},
 		ParseFunc: func(r *geziyor.Response) {
 			r.DocHTML.Find("a").Each(func(_ int, s *goquery.Selection) {
 				r.Exports <- s.AttrOr("href", "")
 			})
 		},
-		Exporters: []geziyor.Exporter{exporter.JSONExporter{}},
+		Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
 	}).Start()
-}
-
-func TestAlmaany(t *testing.T) {
-	alphabet := "ab"
-
-	geziyor.NewGeziyor(geziyor.Options{
-		AllowedDomains: []string{"www.almaany.com"},
-		StartRequestsFunc: func(g *geziyor.Geziyor) {
-			base := "http://www.almaany.com/suggest.php?term=%c%c&lang=turkish&t=d"
-			for _, c1 := range alphabet {
-				for _, c2 := range alphabet {
-					req, _ := http.NewRequest("GET", fmt.Sprintf(base, c1, c2), nil)
-					go g.Do(&geziyor.Request{Request: req, Meta: map[string]interface{}{"word": string(c1) + string(c2)}}, parseAlmaany)
-				}
-			}
-		},
-		ConcurrentRequests: 10,
-		Exporters:          []geziyor.Exporter{exporter.CSVExporter{}},
-	}).Start()
-
-}
-
-func parseAlmaany(r *geziyor.Response) {
-	var words []string
-	_ = json.Unmarshal(r.Body, &words)
-	r.Exports <- words
-
-	if len(words) == 20 {
-		alphabet := "ab"
-		base := "http://www.almaany.com/suggest.php?term=%s%c&lang=turkish&t=d"
-
-		for _, c := range alphabet {
-			req, _ := http.NewRequest("GET", fmt.Sprintf(base, r.Meta["word"], c), nil)
-			go r.Geziyor.Do(&geziyor.Request{Request: req, Meta: map[string]interface{}{"word": r.Meta["word"].(string) + string(c)}}, parseAlmaany)
-		}
-	}
 }
 
 func TestGetRendered(t *testing.T) {

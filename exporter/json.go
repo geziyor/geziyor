@@ -19,7 +19,7 @@ type JSONExporter struct {
 }
 
 // Export exports response data as JSON streaming file
-func (e JSONExporter) Export(response *geziyor.Response) {
+func (e *JSONExporter) Export(response *geziyor.Response) {
 
 	// Default filename
 	if e.FileName == "" {
