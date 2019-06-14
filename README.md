@@ -49,7 +49,7 @@ func quotesParse(r *geziyor.Response) {
         }
     })
     if href, ok := r.DocHTML.Find("li.next > a").Attr("href"); ok {
-        go r.Geziyor.Get(r.JoinURL(href), quotesParse)
+        r.Geziyor.Get(r.JoinURL(href), quotesParse)
     }
 }
 ```

@@ -29,13 +29,16 @@ type Exporter interface {
 type Geziyor struct {
 	Opt Options
 
-	client      *http.Client
-	wg          sync.WaitGroup
-	visitedURLS []string
-	semGlobal   chan struct{}
-	semHosts    struct {
+	client    *http.Client
+	wg        sync.WaitGroup
+	semGlobal chan struct{}
+	semHosts  struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
+	}
+	visitedURLS struct {
+		sync.RWMutex
+		visitedURLS []string
 	}
 }
 
@@ -88,7 +91,7 @@ func (g *Geziyor) Start() {
 
 	if g.Opt.StartRequestsFunc == nil {
 		for _, startURL := range g.Opt.StartURLs {
-			go g.Get(startURL, g.Opt.ParseFunc)
+			g.Get(startURL, g.Opt.ParseFunc)
 		}
 	} else {
 		g.Opt.StartRequestsFunc(g)
@@ -112,13 +115,14 @@ func (g *Geziyor) Get(url string, callback func(resp *Response)) {
 
 // GetRendered issues GET request using headless browser
 // Opens up a new Chrome instance, makes request, waits for 1 second to render HTML DOM and closed.
+// Rendered requests only supported for GET requests.
 func (g *Geziyor) GetRendered(url string, callback func(resp *Response)) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(&Request{Request: req, rendered: true}, callback)
+	g.Do(&Request{Request: req, Rendered: true}, callback)
 }
 
 // Head issues a HEAD to the specified URL
@@ -134,6 +138,11 @@ func (g *Geziyor) Head(url string, callback func(resp *Response)) {
 // Do sends an HTTP request
 func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 	g.wg.Add(1)
+	go g.do(req, callback)
+}
+
+// Do sends an HTTP request
+func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
 	defer g.wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
@@ -145,11 +154,11 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 		return
 	}
 
-	// Do request normal or chrome and read response
+	// Do request normal or Chrome and read response
 	var response *Response
 	var err error
-	if !req.rendered {
-		response, err = g.doRequest(req)
+	if !req.Rendered {
+		response, err = g.doRequestClient(req)
 	} else {
 		response, err = g.doRequestChrome(req)
 	}
@@ -185,7 +194,7 @@ func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
 	time.Sleep(time.Millisecond)
 }
 
-func (g *Geziyor) doRequest(req *Request) (*Response, error) {
+func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 	g.acquireSem(req)
 	defer g.releaseSem(req)
 
@@ -267,8 +276,8 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 
 	response := &Response{
 		//Response: resp,
-		Body: []byte(res),
-		//Meta:     request.Meta,
+		Body:    []byte(res),
+		Meta:    req.Meta,
 		Geziyor: g,
 		Exports: make(chan interface{}),
 	}
@@ -314,11 +323,16 @@ func (g *Geziyor) checkURL(parsedURL *url.URL) bool {
 
 	// Check for duplicate requests
 	if !g.Opt.URLRevisitEnabled {
-		if contains(g.visitedURLS, rawURL) {
+		g.visitedURLS.RLock()
+		if contains(g.visitedURLS.visitedURLS, rawURL) {
+			g.visitedURLS.RUnlock()
 			//log.Printf("URL already visited %s\n", rawURL)
 			return false
 		}
-		g.visitedURLS = append(g.visitedURLS, rawURL)
+		g.visitedURLS.RUnlock()
+		g.visitedURLS.Lock()
+		g.visitedURLS.visitedURLS = append(g.visitedURLS.visitedURLS, rawURL)
+		g.visitedURLS.Unlock()
 	}
 
 	return true
