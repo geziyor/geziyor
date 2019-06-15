@@ -3,7 +3,6 @@ package exporter
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/geziyor/geziyor"
 	"log"
 	"os"
 	"reflect"
@@ -19,7 +18,8 @@ type CSVExporter struct {
 	writer *csv.Writer
 }
 
-func (e *CSVExporter) Export(response *geziyor.Response) {
+// Export exports response data as CSV streaming file
+func (e *CSVExporter) Export(exports chan interface{}) {
 
 	// Default filename
 	if e.FileName == "" {
@@ -37,7 +37,7 @@ func (e *CSVExporter) Export(response *geziyor.Response) {
 	})
 
 	// Export data as responses came
-	for res := range response.Exports {
+	for res := range exports {
 		var values []string
 
 		// Detect type and extract CSV values
@@ -57,14 +57,9 @@ func (e *CSVExporter) Export(response *geziyor.Response) {
 		}
 
 		// Write to file
-		e.mut.Lock()
 		if err := e.writer.Write(values); err != nil {
 			log.Printf("CSV writing error on exporter: %v\n", err)
 		}
-		e.mut.Unlock()
 	}
-
-	e.mut.Lock()
 	e.writer.Flush()
-	e.mut.Unlock()
 }

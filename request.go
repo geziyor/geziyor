@@ -7,8 +7,26 @@ import (
 // Request is a small wrapper around *http.Request that contains Metadata and Rendering option
 type Request struct {
 	*http.Request
-	Meta     map[string]interface{}
-	Rendered bool
+	Meta      map[string]interface{}
+	Rendered  bool
+	Cancelled bool
+}
+
+func allowedDomainsMiddleware(g *Geziyor, r *Request) {
+	if len(g.Opt.AllowedDomains) != 0 && !contains(g.Opt.AllowedDomains, r.Host) {
+		//log.Printf("Domain not allowed: %s\n", req.Host)
+		r.Cancelled = true
+		return
+	}
+}
+
+func duplicateRequestsMiddleware(g *Geziyor, r *Request) {
+	if !g.Opt.URLRevisitEnabled {
+		if _, visited := g.visitedURLs.LoadOrStore(r.Request.URL.String(), struct{}{}); visited {
+			//log.Printf("URL already visited %s\n", rawURL)
+			r.Cancelled = true
+		}
+	}
 }
 
 func defaultHeadersMiddleware(g *Geziyor, r *Request) {
@@ -23,4 +41,14 @@ func headerSetDefault(header http.Header, key string, value string) http.Header 
 		header.Set(key, value)
 	}
 	return header
+}
+
+// contains checks whether []string contains string
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

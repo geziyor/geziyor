@@ -14,7 +14,6 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"runtime/debug"
 	"sync"
@@ -23,7 +22,7 @@ import (
 
 // Exporter interface is for extracting data to external resources
 type Exporter interface {
-	Export(r *Response)
+	Export(exports chan interface{})
 }
 
 // RequestMiddleware called before requests made.
@@ -32,7 +31,8 @@ type RequestMiddleware func(g *Geziyor, r *Request)
 
 // Geziyor is our main scraper type
 type Geziyor struct {
-	Opt Options
+	Opt     Options
+	Exports chan interface{}
 
 	client    *http.Client
 	wg        sync.WaitGroup
@@ -41,11 +41,8 @@ type Geziyor struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
-	visitedURLS struct {
-		sync.RWMutex
-		visitedURLS []string
-	}
-	requestMiddlewaresBase []RequestMiddleware
+	visitedURLs        sync.Map
+	requestMiddlewares []RequestMiddleware
 }
 
 func init() {
@@ -73,8 +70,13 @@ func NewGeziyor(opt Options) *Geziyor {
 			},
 			Timeout: time.Second * 180, // Google's timeout
 		},
-		Opt:                    opt,
-		requestMiddlewaresBase: []RequestMiddleware{defaultHeadersMiddleware},
+		Opt:     opt,
+		Exports: make(chan interface{}),
+		requestMiddlewares: []RequestMiddleware{
+			allowedDomainsMiddleware,
+			duplicateRequestsMiddleware,
+			defaultHeadersMiddleware,
+		},
 	}
 
 	if opt.Cache != nil {
@@ -102,6 +104,7 @@ func NewGeziyor(opt Options) *Geziyor {
 	if opt.MaxBodySize == 0 {
 		geziyor.Opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
 	}
+	geziyor.requestMiddlewares = append(geziyor.requestMiddlewares, opt.RequestMiddlewares...)
 
 	return geziyor
 }
@@ -109,6 +112,17 @@ func NewGeziyor(opt Options) *Geziyor {
 // Start starts scraping
 func (g *Geziyor) Start() {
 	log.Println("Scraping Started")
+
+	if len(g.Opt.Exporters) != 0 {
+		for _, exp := range g.Opt.Exporters {
+			go exp.Export(g.Exports)
+		}
+	} else {
+		go func() {
+			for range g.Exports {
+			}
+		}()
+	}
 
 	if g.Opt.StartRequestsFunc == nil {
 		for _, startURL := range g.Opt.StartURLs {
@@ -119,7 +133,7 @@ func (g *Geziyor) Start() {
 	}
 
 	g.wg.Wait()
-
+	close(g.Exports)
 	log.Println("Scraping Finished")
 }
 
@@ -170,16 +184,11 @@ func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
 		}
 	}()
 
-	if !g.checkURL(req.URL) {
-		return
-	}
-
-	// Request Middlewares
-	for _, middlewareFunc := range g.requestMiddlewaresBase {
+	for _, middlewareFunc := range g.requestMiddlewares {
 		middlewareFunc(g, req)
-	}
-	for _, middlewareFunc := range g.Opt.RequestMiddlewares {
-		middlewareFunc(g, req)
+		if req.Cancelled {
+			return
+		}
 	}
 
 	// Do request normal or Chrome and read response
@@ -198,19 +207,6 @@ func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
 		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(response.Body))
 	}
 
-	// Exporter functions
-	for _, exp := range g.Opt.Exporters {
-		go exp.Export(response)
-	}
-
-	// Drain exports chan if no exporter functions added
-	if len(g.Opt.Exporters) == 0 {
-		go func() {
-			for range response.Exports {
-			}
-		}()
-	}
-
 	// Callbacks
 	if callback != nil {
 		callback(response)
@@ -219,9 +215,6 @@ func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
 			g.Opt.ParseFunc(response)
 		}
 	}
-
-	// Close exports chan to prevent goroutine leak
-	close(response.Exports)
 }
 
 func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
@@ -265,7 +258,6 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 		Body:     body,
 		Meta:     req.Meta,
 		Geziyor:  g,
-		Exports:  make(chan interface{}),
 	}
 
 	return &response, nil
@@ -303,7 +295,6 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 		Body:    []byte(res),
 		Meta:    req.Meta,
 		Geziyor: g,
-		Exports: make(chan interface{}),
 	}
 
 	return response, nil
@@ -313,7 +304,6 @@ func (g *Geziyor) acquireSem(req *Request) {
 	if g.Opt.ConcurrentRequests != 0 {
 		g.semGlobal <- struct{}{}
 	}
-
 	if g.Opt.ConcurrentRequestsPerDomain != 0 {
 		g.semHosts.RLock()
 		hostSem, exists := g.semHosts.hostSems[req.Host]
@@ -337,31 +327,6 @@ func (g *Geziyor) releaseSem(req *Request) {
 	}
 }
 
-func (g *Geziyor) checkURL(parsedURL *url.URL) bool {
-	rawURL := parsedURL.String()
-	// Check for allowed domains
-	if len(g.Opt.AllowedDomains) != 0 && !contains(g.Opt.AllowedDomains, parsedURL.Host) {
-		//log.Printf("Domain not allowed: %s\n", parsedURL.Host)
-		return false
-	}
-
-	// Check for duplicate requests
-	if !g.Opt.URLRevisitEnabled {
-		g.visitedURLS.RLock()
-		if contains(g.visitedURLS.visitedURLS, rawURL) {
-			g.visitedURLS.RUnlock()
-			//log.Printf("URL already visited %s\n", rawURL)
-			return false
-		}
-		g.visitedURLS.RUnlock()
-		g.visitedURLS.Lock()
-		g.visitedURLS.visitedURLS = append(g.visitedURLS.visitedURLS, rawURL)
-		g.visitedURLS.Unlock()
-	}
-
-	return true
-}
-
 func (g *Geziyor) delay() {
 	if g.Opt.RequestDelayRandomize {
 		min := float64(g.Opt.RequestDelay) * 0.5
@@ -370,14 +335,4 @@ func (g *Geziyor) delay() {
 	} else {
 		time.Sleep(g.Opt.RequestDelay)
 	}
-}
-
-// contains checks whether []string contains string
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
 }

@@ -3,7 +3,6 @@ package exporter
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/geziyor/geziyor"
 	"log"
 	"os"
 	"sync"
@@ -20,7 +19,7 @@ type JSONExporter struct {
 }
 
 // Export exports response data as JSON streaming file
-func (e *JSONExporter) Export(response *geziyor.Response) {
+func (e *JSONExporter) Export(exports chan interface{}) {
 
 	// Default filename
 	if e.FileName == "" {
@@ -39,11 +38,9 @@ func (e *JSONExporter) Export(response *geziyor.Response) {
 	})
 
 	// Export data as responses came
-	for res := range response.Exports {
-		e.mut.Lock()
+	for res := range exports {
 		if err := e.encoder.Encode(res); err != nil {
 			log.Printf("JSON encoding error on exporter: %v\n", err)
 		}
-		e.mut.Unlock()
 	}
 }

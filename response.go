@@ -16,7 +16,6 @@ type Response struct {
 	Meta    map[string]interface{}
 
 	Geziyor *Geziyor
-	Exports chan interface{}
 }
 
 // JoinURL joins base response URL and provided relative URL.

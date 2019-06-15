@@ -28,7 +28,7 @@ func TestSimpleCache(t *testing.T) {
 		Cache:     httpcache.NewMemoryCache(),
 		ParseFunc: func(r *geziyor.Response) {
 			fmt.Println(string(r.Body))
-			r.Exports <- string(r.Body)
+			r.Geziyor.Exports <- string(r.Body)
 			r.Geziyor.Get("http://api.ipify.org", nil)
 		},
 	})
@@ -47,7 +47,7 @@ func TestQuotes(t *testing.T) {
 func quotesParse(r *geziyor.Response) {
 	r.DocHTML.Find("div.quote").Each(func(i int, s *goquery.Selection) {
 		// Export Data
-		r.Exports <- map[string]interface{}{
+		r.Geziyor.Exports <- map[string]interface{}{
 			"number": i,
 			"text":   s.Find("span.text").Text(),
 			"author": s.Find("small.author").Text(),
@@ -63,12 +63,14 @@ func quotesParse(r *geziyor.Response) {
 	}
 }
 
-func TestLinks(t *testing.T) {
+func TestAllLinks(t *testing.T) {
+	defer leaktest.Check(t)()
+
 	geziyor.NewGeziyor(geziyor.Options{
 		AllowedDomains: []string{"books.toscrape.com"},
 		StartURLs:      []string{"http://books.toscrape.com/"},
 		ParseFunc: func(r *geziyor.Response) {
-			r.Exports <- []string{r.Request.URL.String()}
+			r.Geziyor.Exports <- []string{r.Request.URL.String()}
 			r.DocHTML.Find("a").Each(func(i int, s *goquery.Selection) {
 				if href, ok := s.Attr("href"); ok {
 					r.Geziyor.Get(r.JoinURL(href), r.Geziyor.Opt.ParseFunc)
@@ -95,7 +97,7 @@ func TestStartRequestsFunc(t *testing.T) {
 		},
 		ParseFunc: func(r *geziyor.Response) {
 			r.DocHTML.Find("a").Each(func(_ int, s *goquery.Selection) {
-				r.Exports <- s.AttrOr("href", "")
+				r.Geziyor.Exports <- s.AttrOr("href", "")
 			})
 		},
 		Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
