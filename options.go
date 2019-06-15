@@ -47,11 +47,17 @@ type Options struct {
 	// For extracting data
 	Exporters []Exporter
 
+	// Called before requests made to manipulate requests
+	RequestMiddlewares []RequestMiddleware
+
 	// Max body reading size in bytes
 	MaxBodySize int64
 
 	// Charset Detection disable
 	CharsetDetectDisabled bool
+
+	// If true, HTML parsing is disabled to improve performance.
+	ParseHTMLDisabled bool
 
 	// Revisiting same URLs is disabled by default
 	URLRevisitEnabled bool

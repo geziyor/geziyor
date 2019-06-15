@@ -23,8 +23,12 @@ import (
 
 // Exporter interface is for extracting data to external resources
 type Exporter interface {
-	Export(response *Response)
+	Export(r *Response)
 }
+
+// RequestMiddleware called before requests made.
+// Set request.Cancelled = true to cancel request
+type RequestMiddleware func(g *Geziyor, r *Request)
 
 // Geziyor is our main scraper type
 type Geziyor struct {
@@ -41,6 +45,7 @@ type Geziyor struct {
 		sync.RWMutex
 		visitedURLS []string
 	}
+	requestMiddlewaresBase []RequestMiddleware
 }
 
 func init() {
@@ -68,7 +73,8 @@ func NewGeziyor(opt Options) *Geziyor {
 			},
 			Timeout: time.Second * 180, // Google's timeout
 		},
-		Opt: opt,
+		Opt:                    opt,
+		requestMiddlewaresBase: []RequestMiddleware{defaultHeadersMiddleware},
 	}
 
 	if opt.Cache != nil {
@@ -168,6 +174,14 @@ func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
 		return
 	}
 
+	// Request Middlewares
+	for _, middlewareFunc := range g.requestMiddlewaresBase {
+		middlewareFunc(g, req)
+	}
+	for _, middlewareFunc := range g.Opt.RequestMiddlewares {
+		middlewareFunc(g, req)
+	}
+
 	// Do request normal or Chrome and read response
 	var response *Response
 	var err error
@@ -180,7 +194,7 @@ func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
 		return
 	}
 
-	if response.isHTML() {
+	if !g.Opt.ParseHTMLDisabled && response.isHTML() {
 		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(response.Body))
 	}
 
@@ -215,12 +229,6 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 	defer g.releaseSem(req)
 
 	g.delay()
-
-	// Modify Request
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	req.Header.Set("Accept-Charset", "utf-8")
-	req.Header.Set("Accept-Language", "en")
-	req.Header.Set("User-Agent", g.Opt.UserAgent)
 
 	log.Println("Fetching: ", req.URL.String())
 

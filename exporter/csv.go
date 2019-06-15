@@ -49,12 +49,11 @@ func (e *CSVExporter) Export(response *geziyor.Response) {
 				values = append(values, fmt.Sprint(val.Index(i)))
 			}
 
-		// TODO: Map type support is incomplete. Ordering is wrong. Needs to be sorted by map keys (CSV headers).
-		case reflect.Map:
-			iter := val.MapRange()
-			for iter.Next() {
-				values = append(values, fmt.Sprint(iter.Value()))
-			}
+			//case reflect.Map:
+			//	iter := val.MapRange()
+			//	for iter.Next() {
+			//		values = append(values, fmt.Sprint(iter.Value()))
+			//	}
 		}
 
 		// Write to file

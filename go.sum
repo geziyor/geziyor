@@ -6,6 +6,8 @@ github.com/chromedp/cdproto v0.0.0-20190429085128-1aa4f57ff2a9 h1:ARnDd2vEk91rLN
 github.com/chromedp/cdproto v0.0.0-20190429085128-1aa4f57ff2a9/go.mod h1:xquOK9dIGFlLaIGI4c6IyfLI/Gz0LiYYuJtzhsUODgI=
 github.com/chromedp/chromedp v0.3.0 h1:7/pwrXFRq6/ym3sxCykm90DMoyw6VKXY48DgGRgUURA=
 github.com/chromedp/chromedp v0.3.0/go.mod h1:EktsZcC2iycVrRhC9fDmshBpCK9lNnZYi6x2q9uE7zI=
+github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
+github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHquHwclZch5g=
 github.com/fpfeng/httpcache v0.0.0-20181220155740-6b8f16a92be3 h1:yoJ3JExhshZwcfvvQLLRqKICf4/p4gZ/mDzdQV1hRWQ=
 github.com/fpfeng/httpcache v0.0.0-20181220155740-6b8f16a92be3/go.mod h1:QThlC5qj7EJa+O2HqbxzVGWLspJQHQLVsKmBtbg9ak8=
 github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee h1:s+21KNqlpePfkah2I+gwHF8xmJWRjooY+5248k6m4A0=

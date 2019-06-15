@@ -3,6 +3,7 @@ package geziyor_test
 import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/fortytw2/leaktest"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/exporter"
@@ -21,6 +22,7 @@ func TestSimple(t *testing.T) {
 }
 
 func TestSimpleCache(t *testing.T) {
+	defer leaktest.Check(t)()
 	gez := geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		Cache:     httpcache.NewMemoryCache(),
@@ -34,6 +36,7 @@ func TestSimpleCache(t *testing.T) {
 }
 
 func TestQuotes(t *testing.T) {
+	defer leaktest.Check(t)()
 	geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: quotesParse,
@@ -56,7 +59,7 @@ func quotesParse(r *geziyor.Response) {
 
 	// Next Page
 	if href, ok := r.DocHTML.Find("li.next > a").Attr("href"); ok {
-		go r.Geziyor.Get(r.JoinURL(href), quotesParse)
+		r.Geziyor.Get(r.JoinURL(href), quotesParse)
 	}
 }
 
