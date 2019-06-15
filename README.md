@@ -12,6 +12,7 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 - Limit Concurrency (Global/Per Domain)
 - Request Delays (Constant/Randomized)
 - Automatic response decoding to UTF-8
+- Middlewares
 
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for all custom settings. 
 
@@ -43,7 +44,7 @@ func main() {
 
 func quotesParse(r *geziyor.Response) {
     r.DocHTML.Find("div.quote").Each(func(i int, s *goquery.Selection) {
-        r.Exports <- map[string]interface{}{
+        r.Geziyor.Exports <- map[string]interface{}{
             "text":   s.Find("span.text").Text(),
             "author": s.Find("small.author").Text(),
         }

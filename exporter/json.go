@@ -14,7 +14,6 @@ type JSONExporter struct {
 	EscapeHTML bool
 
 	once    sync.Once
-	mut     sync.Mutex
 	encoder *json.Encoder
 }
 

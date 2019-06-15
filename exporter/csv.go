@@ -14,7 +14,6 @@ type CSVExporter struct {
 	FileName string
 
 	once   sync.Once
-	mut    sync.Mutex
 	writer *csv.Writer
 }
 
