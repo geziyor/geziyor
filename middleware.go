@@ -1,10 +1,18 @@
 package geziyor
 
-import "github.com/geziyor/geziyor/internal"
+import (
+	"bytes"
+	"fmt"
+	"github.com/PuerkitoBio/goquery"
+	"github.com/geziyor/geziyor/internal"
+)
 
 // RequestMiddleware called before requests made.
 // Set request.Cancelled = true to cancel request
 type RequestMiddleware func(g *Geziyor, r *Request)
+
+// ResponseMiddleware called after request response receive
+type ResponseMiddleware func(g *Geziyor, r *Response)
 
 // allowedDomainsMiddleware checks for request host if it exists in AllowedDomains
 func allowedDomainsMiddleware(g *Geziyor, r *Request) {
@@ -32,4 +40,12 @@ func defaultHeadersMiddleware(g *Geziyor, r *Request) {
 	r.Header = internal.SetDefaultHeader(r.Header, "Accept-Charset", "utf-8")
 	r.Header = internal.SetDefaultHeader(r.Header, "Accept-Language", "en")
 	r.Header = internal.SetDefaultHeader(r.Header, "User-Agent", g.Opt.UserAgent)
+}
+
+// parseHTMLMiddleware parses response if response is HTML
+func parseHTMLMiddleware(g *Geziyor, r *Response) {
+	fmt.Println(r.Request.depth)
+	if !g.Opt.ParseHTMLDisabled && r.isHTML() {
+		r.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
+	}
 }

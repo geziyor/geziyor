@@ -64,6 +64,10 @@ See [tests](https://github.com/geziyor/geziyor/blob/master/geziyor_test.go) for 
 
     go get github.com/geziyor/geziyor
 
+**NOTE**: macOS limits the maximum number of open file descriptors.
+If you want to make concurrent requests over 256, you need to increase limits.
+Read [this](https://wilsonmar.github.io/maximum-limits/) for more.
+
 ### Making Requests
 
 Initial requests start with ```StartURLs []string``` field in ```Options```. 

@@ -50,6 +50,9 @@ type Options struct {
 	// Called before requests made to manipulate requests
 	RequestMiddlewares []RequestMiddleware
 
+	// Called after response received
+	ResponseMiddlewares []ResponseMiddleware
+
 	// Max body reading size in bytes. Default: 1GB
 	MaxBodySize int64
 

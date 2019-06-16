@@ -33,19 +33,16 @@ func (e *CSVExporter) Export(exports chan interface{}) {
 		// Detect type and extract CSV values
 		val := reflect.ValueOf(res)
 		switch val.Kind() {
-
 		case reflect.Slice:
 			for i := 0; i < val.Len(); i++ {
 				values = append(values, fmt.Sprint(val.Index(i)))
 			}
-
 			//case reflect.Map:
 			//	iter := val.MapRange()
 			//	for iter.Next() {
 			//		values = append(values, fmt.Sprint(iter.Value()))
 			//	}
 		}
-
 		if err := writer.Write(values); err != nil {
 			log.Printf("CSV writing error on exporter: %v\n", err)
 		}

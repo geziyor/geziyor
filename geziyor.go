@@ -1,9 +1,7 @@
 package geziyor
 
 import (
-	"bytes"
 	"context"
-	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
 	"github.com/fpfeng/httpcache"
@@ -37,8 +35,9 @@ type Geziyor struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
-	visitedURLs        sync.Map
-	requestMiddlewares []RequestMiddleware
+	visitedURLs         sync.Map
+	requestMiddlewares  []RequestMiddleware
+	responseMiddlewares []ResponseMiddleware
 }
 
 func init() {
@@ -57,6 +56,9 @@ func NewGeziyor(opt Options) *Geziyor {
 			allowedDomainsMiddleware,
 			duplicateRequestsMiddleware,
 			defaultHeadersMiddleware,
+		},
+		responseMiddlewares: []ResponseMiddleware{
+			parseHTMLMiddleware,
 		},
 	}
 
@@ -86,6 +88,7 @@ func NewGeziyor(opt Options) *Geziyor {
 		log.SetOutput(ioutil.Discard)
 	}
 	geziyor.requestMiddlewares = append(geziyor.requestMiddlewares, opt.RequestMiddlewares...)
+	geziyor.responseMiddlewares = append(geziyor.responseMiddlewares, opt.ResponseMiddlewares...)
 
 	return geziyor
 }
@@ -186,8 +189,8 @@ func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 		return
 	}
 
-	if !g.Opt.ParseHTMLDisabled && response.isHTML() {
-		response.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(response.Body))
+	for _, middlewareFunc := range g.responseMiddlewares {
+		middlewareFunc(g, response)
 	}
 
 	// Callbacks
@@ -240,6 +243,7 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 		Response: resp,
 		Body:     body,
 		Meta:     req.Meta,
+		Request:  req,
 	}
 
 	return &response, nil
@@ -274,8 +278,9 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 
 	response := Response{
 		//Response: resp,
-		Body: []byte(res),
-		Meta: req.Meta,
+		Body:    []byte(res),
+		Meta:    req.Meta,
+		Request: req,
 	}
 
 	return &response, nil
