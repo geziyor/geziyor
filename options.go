@@ -18,7 +18,7 @@ type Options struct {
 	StartRequestsFunc func(g *Geziyor)
 
 	// ParseFunc is callback of StartURLs response.
-	ParseFunc func(r *Response)
+	ParseFunc func(g *Geziyor, r *Response)
 
 	// Timeout is global request timeout
 	Timeout time.Duration
@@ -33,7 +33,7 @@ type Options struct {
 	// Concurrent requests per domain limit
 	ConcurrentRequestsPerDomain int
 
-	// User Agent
+	// User Agent. Default: "Geziyor 1.0"
 	UserAgent string
 
 	// Request delays
@@ -50,7 +50,7 @@ type Options struct {
 	// Called before requests made to manipulate requests
 	RequestMiddlewares []RequestMiddleware
 
-	// Max body reading size in bytes
+	// Max body reading size in bytes. Default: 1GB
 	MaxBodySize int64
 
 	// Charset Detection disable

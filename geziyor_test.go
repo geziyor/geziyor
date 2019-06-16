@@ -15,7 +15,7 @@ import (
 func TestSimple(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
-		ParseFunc: func(r *geziyor.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
 			fmt.Println(string(r.Body))
 		},
 	}).Start()
@@ -23,16 +23,15 @@ func TestSimple(t *testing.T) {
 
 func TestSimpleCache(t *testing.T) {
 	defer leaktest.Check(t)()
-	gez := geziyor.NewGeziyor(geziyor.Options{
+	geziyor.NewGeziyor(geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		Cache:     httpcache.NewMemoryCache(),
-		ParseFunc: func(r *geziyor.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
 			fmt.Println(string(r.Body))
-			r.Geziyor.Exports <- string(r.Body)
-			r.Geziyor.Get("http://api.ipify.org", nil)
+			g.Exports <- string(r.Body)
+			g.Get("http://api.ipify.org", nil)
 		},
-	})
-	gez.Start()
+	}).Start()
 }
 
 func TestQuotes(t *testing.T) {
@@ -44,10 +43,10 @@ func TestQuotes(t *testing.T) {
 	}).Start()
 }
 
-func quotesParse(r *geziyor.Response) {
+func quotesParse(g *geziyor.Geziyor, r *geziyor.Response) {
 	r.DocHTML.Find("div.quote").Each(func(i int, s *goquery.Selection) {
 		// Export Data
-		r.Geziyor.Exports <- map[string]interface{}{
+		g.Exports <- map[string]interface{}{
 			"number": i,
 			"text":   s.Find("span.text").Text(),
 			"author": s.Find("small.author").Text(),
@@ -59,7 +58,7 @@ func quotesParse(r *geziyor.Response) {
 
 	// Next Page
 	if href, ok := r.DocHTML.Find("li.next > a").Attr("href"); ok {
-		r.Geziyor.Get(r.JoinURL(href), quotesParse)
+		g.Get(r.JoinURL(href), quotesParse)
 	}
 }
 
@@ -69,11 +68,11 @@ func TestAllLinks(t *testing.T) {
 	geziyor.NewGeziyor(geziyor.Options{
 		AllowedDomains: []string{"books.toscrape.com"},
 		StartURLs:      []string{"http://books.toscrape.com/"},
-		ParseFunc: func(r *geziyor.Response) {
-			r.Geziyor.Exports <- []string{r.Request.URL.String()}
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+			g.Exports <- []string{r.Request.URL.String()}
 			r.DocHTML.Find("a").Each(func(i int, s *goquery.Selection) {
 				if href, ok := s.Attr("href"); ok {
-					r.Geziyor.Get(r.JoinURL(href), r.Geziyor.Opt.ParseFunc)
+					g.Get(r.JoinURL(href), g.Opt.ParseFunc)
 				}
 			})
 		},
@@ -95,9 +94,9 @@ func TestStartRequestsFunc(t *testing.T) {
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			g.Get("http://quotes.toscrape.com/", g.Opt.ParseFunc)
 		},
-		ParseFunc: func(r *geziyor.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
 			r.DocHTML.Find("a").Each(func(_ int, s *goquery.Selection) {
-				r.Geziyor.Exports <- s.AttrOr("href", "")
+				g.Exports <- s.AttrOr("href", "")
 			})
 		},
 		Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
@@ -109,9 +108,20 @@ func TestGetRendered(t *testing.T) {
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
 		},
-		ParseFunc: func(r *geziyor.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
 			fmt.Println(string(r.Body))
 		},
 		//URLRevisitEnabled: true,
+	}).Start()
+}
+
+func TestHEADRequest(t *testing.T) {
+	geziyor.NewGeziyor(geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			g.Head("https://httpbin.org/anything", g.Opt.ParseFunc)
+		},
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+			fmt.Println(string(r.Body))
+		},
 	}).Start()
 }

@@ -7,12 +7,12 @@ import (
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/chromedp"
 	"github.com/fpfeng/httpcache"
+	"github.com/geziyor/geziyor/internal"
 	"golang.org/x/net/html/charset"
 	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"runtime/debug"
@@ -24,10 +24,6 @@ import (
 type Exporter interface {
 	Export(exports chan interface{})
 }
-
-// RequestMiddleware called before requests made.
-// Set request.Cancelled = true to cancel request
-type RequestMiddleware func(g *Geziyor, r *Request)
 
 // Geziyor is our main scraper type
 type Geziyor struct {
@@ -54,22 +50,7 @@ func init() {
 // If options provided, options
 func NewGeziyor(opt Options) *Geziyor {
 	geziyor := &Geziyor{
-		client: &http.Client{
-			Transport: &http.Transport{
-				Proxy: http.ProxyFromEnvironment,
-				DialContext: (&net.Dialer{
-					Timeout:   30 * time.Second,
-					KeepAlive: 30 * time.Second,
-					DualStack: true,
-				}).DialContext,
-				MaxIdleConns:          0,    // Default: 100
-				MaxIdleConnsPerHost:   1000, // Default: 2
-				IdleConnTimeout:       90 * time.Second,
-				TLSHandshakeTimeout:   10 * time.Second,
-				ExpectContinueTimeout: 1 * time.Second,
-			},
-			Timeout: time.Second * 180, // Google's timeout
-		},
+		client:  internal.NewClient(),
 		Opt:     opt,
 		Exports: make(chan interface{}),
 		requestMiddlewares: []RequestMiddleware{
@@ -79,6 +60,12 @@ func NewGeziyor(opt Options) *Geziyor {
 		},
 	}
 
+	if opt.UserAgent == "" {
+		geziyor.Opt.UserAgent = "Geziyor 1.0"
+	}
+	if opt.MaxBodySize == 0 {
+		geziyor.Opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
+	}
 	if opt.Cache != nil {
 		geziyor.client.Transport = &httpcache.Transport{
 			Transport: geziyor.client.Transport, Cache: opt.Cache, MarkCachedResponses: true}
@@ -95,14 +82,8 @@ func NewGeziyor(opt Options) *Geziyor {
 			hostSems map[string]chan struct{}
 		}{hostSems: make(map[string]chan struct{})}
 	}
-	if opt.UserAgent == "" {
-		geziyor.Opt.UserAgent = "Geziyor 1.0"
-	}
 	if opt.LogDisabled {
 		log.SetOutput(ioutil.Discard)
-	}
-	if opt.MaxBodySize == 0 {
-		geziyor.Opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
 	}
 	geziyor.requestMiddlewares = append(geziyor.requestMiddlewares, opt.RequestMiddlewares...)
 
@@ -113,6 +94,7 @@ func NewGeziyor(opt Options) *Geziyor {
 func (g *Geziyor) Start() {
 	log.Println("Scraping Started")
 
+	// Start Exporters
 	if len(g.Opt.Exporters) != 0 {
 		for _, exp := range g.Opt.Exporters {
 			go exp.Export(g.Exports)
@@ -124,6 +106,7 @@ func (g *Geziyor) Start() {
 		}()
 	}
 
+	// Start Requests
 	if g.Opt.StartRequestsFunc == nil {
 		for _, startURL := range g.Opt.StartURLs {
 			g.Get(startURL, g.Opt.ParseFunc)
@@ -138,7 +121,7 @@ func (g *Geziyor) Start() {
 }
 
 // Get issues a GET to the specified URL.
-func (g *Geziyor) Get(url string, callback func(resp *Response)) {
+func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *Response)) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
@@ -150,7 +133,7 @@ func (g *Geziyor) Get(url string, callback func(resp *Response)) {
 // GetRendered issues GET request using headless browser
 // Opens up a new Chrome instance, makes request, waits for 1 second to render HTML DOM and closed.
 // Rendered requests only supported for GET requests.
-func (g *Geziyor) GetRendered(url string, callback func(resp *Response)) {
+func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *Response)) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
@@ -160,7 +143,7 @@ func (g *Geziyor) GetRendered(url string, callback func(resp *Response)) {
 }
 
 // Head issues a HEAD to the specified URL
-func (g *Geziyor) Head(url string, callback func(resp *Response)) {
+func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *Response)) {
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
@@ -170,13 +153,13 @@ func (g *Geziyor) Head(url string, callback func(resp *Response)) {
 }
 
 // Do sends an HTTP request
-func (g *Geziyor) Do(req *Request, callback func(resp *Response)) {
+func (g *Geziyor) Do(req *Request, callback func(g *Geziyor, r *Response)) {
 	g.wg.Add(1)
 	go g.do(req, callback)
 }
 
 // Do sends an HTTP request
-func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
+func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 	defer g.wg.Done()
 	defer func() {
 		if r := recover(); r != nil {
@@ -209,10 +192,10 @@ func (g *Geziyor) do(req *Request, callback func(resp *Response)) {
 
 	// Callbacks
 	if callback != nil {
-		callback(response)
+		callback(g, response)
 	} else {
 		if g.Opt.ParseFunc != nil {
-			g.Opt.ParseFunc(response)
+			g.Opt.ParseFunc(g, response)
 		}
 	}
 }
@@ -239,7 +222,7 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 	bodyReader := io.LimitReader(resp.Body, g.Opt.MaxBodySize)
 
 	// Start reading body and determine encoding
-	if !g.Opt.CharsetDetectDisabled {
+	if !g.Opt.CharsetDetectDisabled && resp.Request.Method != "HEAD" {
 		bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
 		if err != nil {
 			log.Printf("Determine encoding error: %v\n", err)
@@ -257,7 +240,6 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 		Response: resp,
 		Body:     body,
 		Meta:     req.Meta,
-		Geziyor:  g,
 	}
 
 	return &response, nil
@@ -290,14 +272,13 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 		return nil, err
 	}
 
-	response := &Response{
+	response := Response{
 		//Response: resp,
-		Body:    []byte(res),
-		Meta:    req.Meta,
-		Geziyor: g,
+		Body: []byte(res),
+		Meta: req.Meta,
 	}
 
-	return response, nil
+	return &response, nil
 }
 
 func (g *Geziyor) acquireSem(req *Request) {

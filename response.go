@@ -14,8 +14,6 @@ type Response struct {
 	Body    []byte
 	DocHTML *goquery.Document
 	Meta    map[string]interface{}
-
-	Geziyor *Geziyor
 }
 
 // JoinURL joins base response URL and provided relative URL.
