@@ -1,6 +1,7 @@
 package geziyor
 
 import (
+	"io"
 	"net/http"
 )
 
@@ -10,4 +11,14 @@ type Request struct {
 	Meta      map[string]interface{}
 	Rendered  bool
 	Cancelled bool
+}
+
+// NewRequest returns a new Request given a method, URL, and optional body.
+func NewRequest(method, url string, body io.Reader) (*Request, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Request{Request: req}, nil
 }

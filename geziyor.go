@@ -12,6 +12,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"net/http/cookiejar"
 	"os"
 	"runtime/debug"
 	"sync"
@@ -49,7 +50,7 @@ func init() {
 // If options provided, options
 func NewGeziyor(opt *Options) *Geziyor {
 	geziyor := &Geziyor{
-		Client:  internal.NewClient(opt.CookiesDisabled),
+		Client:  internal.NewClient(),
 		Opt:     opt,
 		Exports: make(chan interface{}),
 		requestMiddlewares: []RequestMiddleware{
@@ -74,6 +75,9 @@ func NewGeziyor(opt *Options) *Geziyor {
 	}
 	if opt.Timeout != 0 {
 		geziyor.Client.Timeout = opt.Timeout
+	}
+	if !opt.CookiesDisabled {
+		geziyor.Client.Jar, _ = cookiejar.New(nil)
 	}
 	if opt.ConcurrentRequests != 0 {
 		geziyor.semGlobal = make(chan struct{}, opt.ConcurrentRequests)

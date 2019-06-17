@@ -146,3 +146,13 @@ func TestCookies(t *testing.T) {
 		CookiesDisabled: true,
 	}).Start()
 }
+
+func TestBasicAuth(t *testing.T) {
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			req, _ := geziyor.NewRequest("GET", "https://httpbin.org/anything", nil)
+			req.SetBasicAuth("username", "password")
+			g.Do(req, nil)
+		},
+	}).Start()
+}

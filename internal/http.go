@@ -4,7 +4,6 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"net/http/cookiejar"
 	"net/url"
 	"time"
 )
@@ -20,7 +19,7 @@ type Client struct {
 }
 
 // NewClient creates http.Client with modified values for typical web scraper
-func NewClient(cookiesDisabled bool) *Client {
+func NewClient() *Client {
 	client := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -36,9 +35,6 @@ func NewClient(cookiesDisabled bool) *Client {
 			ExpectContinueTimeout: 1 * time.Second,
 		},
 		Timeout: time.Second * 180, // Google's timeout
-	}
-	if !cookiesDisabled {
-		client.Jar, _ = cookiejar.New(nil)
 	}
 	return &Client{Client: client}
 }
