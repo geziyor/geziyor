@@ -64,4 +64,7 @@ type Options struct {
 
 	// Revisiting same URLs is disabled by default
 	URLRevisitEnabled bool
+
+	// If set true, cookies won't send.
+	CookiesDisabled bool
 }

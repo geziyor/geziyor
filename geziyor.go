@@ -25,10 +25,10 @@ type Exporter interface {
 
 // Geziyor is our main scraper type
 type Geziyor struct {
-	Opt     Options
+	Opt     *Options
+	Client  *internal.Client
 	Exports chan interface{}
 
-	client    *http.Client
 	wg        sync.WaitGroup
 	semGlobal chan struct{}
 	semHosts  struct {
@@ -47,9 +47,9 @@ func init() {
 
 // NewGeziyor creates new Geziyor with default values.
 // If options provided, options
-func NewGeziyor(opt Options) *Geziyor {
+func NewGeziyor(opt *Options) *Geziyor {
 	geziyor := &Geziyor{
-		client:  internal.NewClient(),
+		Client:  internal.NewClient(opt.CookiesDisabled),
 		Opt:     opt,
 		Exports: make(chan interface{}),
 		requestMiddlewares: []RequestMiddleware{
@@ -69,11 +69,11 @@ func NewGeziyor(opt Options) *Geziyor {
 		geziyor.Opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
 	}
 	if opt.Cache != nil {
-		geziyor.client.Transport = &httpcache.Transport{
-			Transport: geziyor.client.Transport, Cache: opt.Cache, MarkCachedResponses: true}
+		geziyor.Client.Transport = &httpcache.Transport{
+			Transport: geziyor.Client.Transport, Cache: opt.Cache, MarkCachedResponses: true}
 	}
 	if opt.Timeout != 0 {
-		geziyor.client.Timeout = opt.Timeout
+		geziyor.Client.Timeout = opt.Timeout
 	}
 	if opt.ConcurrentRequests != 0 {
 		geziyor.semGlobal = make(chan struct{}, opt.ConcurrentRequests)
@@ -212,7 +212,7 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 	log.Println("Fetching: ", req.URL.String())
 
 	// Do request
-	resp, err := g.client.Do(req.Request)
+	resp, err := g.Client.Do(req.Request)
 	if resp != nil {
 		defer resp.Body.Close()
 	}

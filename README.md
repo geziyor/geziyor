@@ -12,6 +12,7 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 - Limit Concurrency (Global/Per Domain)
 - Request Delays (Constant/Randomized)
 - Automatic response decoding to UTF-8
+- Cookies
 - Middlewares
 
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for all custom settings. 
@@ -23,7 +24,7 @@ Since the project is in **development phase**, **API may change in time**. Thus,
 Simple usage 
 
 ```go
-geziyor.NewGeziyor(geziyor.Options{
+geziyor.NewGeziyor(&geziyor.Options{
     StartURLs: []string{"http://api.ipify.org"},
     ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
         fmt.Println(string(r.Body))
@@ -35,7 +36,7 @@ Advanced usage
 
 ```go
 func main() {
-    geziyor.NewGeziyor(geziyor.Options{
+    geziyor.NewGeziyor(&geziyor.Options{
         StartURLs: []string{"http://quotes.toscrape.com/"},
         ParseFunc: quotesParse,
         Exporters: []geziyor.Exporter{exporter.JSONExporter{}},
@@ -75,7 +76,7 @@ Geziyor makes concurrent requests to those URLs.
 After reading response, ```ParseFunc func(g *Geziyor, r *Response)``` called.
 
 ```go
-geziyor.NewGeziyor(geziyor.Options{
+geziyor.NewGeziyor(&geziyor.Options{
     StartURLs: []string{"http://api.ipify.org"},
     ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
         fmt.Println(string(r.Body))
@@ -94,7 +95,7 @@ As it opens up a real browser, it takes a couple of seconds to make requests.
    
 
 ```go
-geziyor.NewGeziyor(geziyor.Options{
+geziyor.NewGeziyor(&geziyor.Options{
     StartRequestsFunc: func(g *geziyor.Geziyor) {
         g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
         g.Head("https://httpbin.org/anything", g.Opt.ParseFunc)

@@ -13,7 +13,7 @@ import (
 )
 
 func TestSimple(t *testing.T) {
-	geziyor.NewGeziyor(geziyor.Options{
+	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
 			fmt.Println(string(r.Body))
@@ -23,7 +23,7 @@ func TestSimple(t *testing.T) {
 
 func TestSimpleCache(t *testing.T) {
 	defer leaktest.Check(t)()
-	geziyor.NewGeziyor(geziyor.Options{
+	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		Cache:     httpcache.NewMemoryCache(),
 		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
@@ -36,7 +36,7 @@ func TestSimpleCache(t *testing.T) {
 
 func TestQuotes(t *testing.T) {
 	defer leaktest.Check(t)()
-	geziyor.NewGeziyor(geziyor.Options{
+	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: quotesParse,
 		Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
@@ -65,7 +65,7 @@ func quotesParse(g *geziyor.Geziyor, r *geziyor.Response) {
 func TestAllLinks(t *testing.T) {
 	defer leaktest.Check(t)()
 
-	geziyor.NewGeziyor(geziyor.Options{
+	geziyor.NewGeziyor(&geziyor.Options{
 		AllowedDomains: []string{"books.toscrape.com"},
 		StartURLs:      []string{"http://books.toscrape.com/"},
 		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
@@ -90,7 +90,7 @@ func TestRandomDelay(t *testing.T) {
 }
 
 func TestStartRequestsFunc(t *testing.T) {
-	geziyor.NewGeziyor(geziyor.Options{
+	geziyor.NewGeziyor(&geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			g.Get("http://quotes.toscrape.com/", g.Opt.ParseFunc)
 		},
@@ -104,7 +104,7 @@ func TestStartRequestsFunc(t *testing.T) {
 }
 
 func TestGetRendered(t *testing.T) {
-	geziyor.NewGeziyor(geziyor.Options{
+	geziyor.NewGeziyor(&geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
 		},
@@ -116,12 +116,33 @@ func TestGetRendered(t *testing.T) {
 }
 
 func TestHEADRequest(t *testing.T) {
-	geziyor.NewGeziyor(geziyor.Options{
+	geziyor.NewGeziyor(&geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			g.Head("https://httpbin.org/anything", g.Opt.ParseFunc)
 		},
 		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
 			fmt.Println(string(r.Body))
 		},
+	}).Start()
+}
+
+func TestCookies(t *testing.T) {
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{"http://quotes.toscrape.com/login"},
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+			if len(g.Client.Cookies("http://quotes.toscrape.com/login")) == 0 {
+				t.Fatal("Cookies is Empty")
+			}
+		},
+	}).Start()
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{"http://quotes.toscrape.com/login"},
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+			if len(g.Client.Cookies("http://quotes.toscrape.com/login")) != 0 {
+				t.Fatal("Cookies exist")
+			}
+		},
+		CookiesDisabled: true,
 	}).Start()
 }
