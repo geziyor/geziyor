@@ -2,7 +2,6 @@ package geziyor
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor/internal"
 )
@@ -44,7 +43,6 @@ func defaultHeadersMiddleware(g *Geziyor, r *Request) {
 
 // parseHTMLMiddleware parses response if response is HTML
 func parseHTMLMiddleware(g *Geziyor, r *Response) {
-	fmt.Println(r.Request.depth)
 	if !g.Opt.ParseHTMLDisabled && r.isHTML() {
 		r.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 	}
