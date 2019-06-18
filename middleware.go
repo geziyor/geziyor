@@ -43,7 +43,7 @@ func defaultHeadersMiddleware(g *Geziyor, r *Request) {
 
 // parseHTMLMiddleware parses response if response is HTML
 func parseHTMLMiddleware(g *Geziyor, r *Response) {
-	if !g.Opt.ParseHTMLDisabled {
+	if !g.Opt.ParseHTMLDisabled && r.isHTML() {
 		r.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 	}
 }

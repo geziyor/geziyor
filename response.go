@@ -4,6 +4,7 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // Response type wraps http.Response
@@ -25,4 +26,17 @@ func (r *Response) JoinURL(relativeURL string) string {
 
 	joinedURL := r.Response.Request.URL.ResolveReference(parsedRelativeURL)
 	return joinedURL.String()
+}
+
+func (r *Response) isHTML() bool {
+	if r.Response == nil {
+		return len(r.Body) != 0
+	}
+	contentType := r.Header.Get("Content-Type")
+	for _, htmlContentType := range []string{"text/html", "application/xhtml+xml", "application/vnd.wap.xhtml+xml"} {
+		if strings.Contains(contentType, htmlContentType) {
+			return true
+		}
+	}
+	return false
 }
