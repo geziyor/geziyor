@@ -3,6 +3,7 @@ package geziyor
 import (
 	"context"
 	"github.com/chromedp/cdproto/dom"
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/internal"
@@ -13,6 +14,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"os"
 	"runtime/debug"
 	"sync"
@@ -262,17 +264,29 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 	ctx, cancel := chromedp.NewContext(context.Background())
 	defer cancel()
 
-	var res string
+	var body string
+	var res *network.Response
 
 	if err := chromedp.Run(ctx,
+		network.Enable(),
+		network.SetExtraHTTPHeaders(network.Headers(internal.ConvertHeaderToMap(req.Header))),
+		chromedp.ActionFunc(func(ctx context.Context) error {
+			chromedp.ListenTarget(ctx, func(ev interface{}) {
+				switch ev.(type) {
+				case *network.EventResponseReceived:
+					res = ev.(*network.EventResponseReceived).Response
+				}
+			})
+			return nil
+		}),
 		chromedp.Navigate(req.URL.String()),
-		chromedp.Sleep(1*time.Second),
+		chromedp.WaitReady(":root"),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			node, err := dom.GetDocument().Do(ctx)
 			if err != nil {
 				return err
 			}
-			res, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
+			body, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
 			return err
 		}),
 	); err != nil {
@@ -280,9 +294,15 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 		return nil, err
 	}
 
+	// Set new URL in case of redirection
+	req.URL, _ = url.Parse(res.URL)
+
 	response := Response{
-		//Response: resp,
-		Body:    []byte(res),
+		Response: &http.Response{
+			Request:    req.Request,
+			StatusCode: int(res.Status),
+		},
+		Body:    []byte(body),
 		Meta:    req.Meta,
 		Request: req,
 	}
