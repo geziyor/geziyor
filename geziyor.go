@@ -265,6 +265,7 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 	defer cancel()
 
 	var body string
+	var reqID network.RequestID
 	var res *network.Response
 
 	if err := chromedp.Run(ctx,
@@ -273,8 +274,14 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			chromedp.ListenTarget(ctx, func(ev interface{}) {
 				switch ev.(type) {
+				case *network.EventRequestWillBeSent:
+					if reqEvent := ev.(*network.EventRequestWillBeSent); reqEvent.Request.URL == req.URL.String() {
+						reqID = reqEvent.RequestID
+					}
 				case *network.EventResponseReceived:
-					res = ev.(*network.EventResponseReceived).Response
+					if resEvent := ev.(*network.EventResponseReceived); resEvent.RequestID == reqID {
+						res = resEvent.Response
+					}
 				}
 			})
 			return nil
