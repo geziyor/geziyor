@@ -110,6 +110,7 @@ func TestGetRendered(t *testing.T) {
 		},
 		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
 			fmt.Println(string(r.Body))
+			fmt.Println(r.Header)
 		},
 		//URLRevisitEnabled: true,
 	}).Start()

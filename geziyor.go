@@ -301,6 +301,7 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 		Response: &http.Response{
 			Request:    req.Request,
 			StatusCode: int(res.Status),
+			Header:     internal.ConvertMapToHeader(res.Headers),
 		},
 		Body:    []byte(body),
 		Meta:    req.Meta,

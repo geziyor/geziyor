@@ -72,7 +72,7 @@ func SetDefaultHeader(header http.Header, key string, value string) http.Header 
 	return header
 }
 
-// CovertHeaderToMap converts http.Header to map[string]interface{}
+// ConvertHeaderToMap converts http.Header to map[string]interface{}
 func ConvertHeaderToMap(header http.Header) map[string]interface{} {
 	m := make(map[string]interface{})
 	for key, values := range header {
@@ -81,4 +81,13 @@ func ConvertHeaderToMap(header http.Header) map[string]interface{} {
 		}
 	}
 	return m
+}
+
+// ConvertMapToHeader converts map[string]interface{} to http.Header
+func ConvertMapToHeader(m map[string]interface{}) http.Header {
+	header := make(map[string][]string)
+	for k, v := range m {
+		header[k] = []string{v.(string)}
+	}
+	return header
 }
