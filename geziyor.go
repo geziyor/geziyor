@@ -16,7 +16,6 @@ import (
 	"net/http/cookiejar"
 	"net/url"
 	"os"
-	"runtime/debug"
 	"sync"
 	"time"
 )
@@ -170,11 +169,7 @@ func (g *Geziyor) Do(req *Request, callback func(g *Geziyor, r *Response)) {
 // Do sends an HTTP request
 func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 	defer g.wg.Done()
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println(r, string(debug.Stack()))
-		}
-	}()
+	defer recoverMiddleware()
 
 	for _, middlewareFunc := range g.requestMiddlewares {
 		middlewareFunc(g, req)

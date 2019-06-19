@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor/internal"
+	"log"
+	"runtime/debug"
 )
 
 // RequestMiddleware called before requests made.
@@ -12,6 +14,14 @@ type RequestMiddleware func(g *Geziyor, r *Request)
 
 // ResponseMiddleware called after request response receive
 type ResponseMiddleware func(g *Geziyor, r *Response)
+
+// recoverMiddleware recovers scraping being crashed.
+// Logs error and stack trace
+func recoverMiddleware() {
+	if r := recover(); r != nil {
+		log.Println(r, string(debug.Stack()))
+	}
+}
 
 // allowedDomainsMiddleware checks for request host if it exists in AllowedDomains
 func allowedDomainsMiddleware(g *Geziyor, r *Request) {
