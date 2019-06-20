@@ -19,7 +19,7 @@ func (e *JSONExporter) Export(exports chan interface{}) {
 	// Create file
 	newFile, err := os.OpenFile(internal.PreferFirst(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Printf("output file creation error: %v", err)
+		log.Printf("Output file creation error: %v\n", err)
 		return
 	}
 

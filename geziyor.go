@@ -7,6 +7,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/internal"
+	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"io"
 	"io/ioutil"
@@ -183,6 +184,7 @@ func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 		response, err = g.doRequestChrome(req)
 	}
 	if err != nil {
+		log.Println(err)
 		return
 	}
 
@@ -208,8 +210,7 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		log.Printf("Response error: %v\n", err)
-		return nil, err
+		return nil, errors.Wrap(err, "Response error")
 	}
 
 	// Limit response body reading
@@ -219,15 +220,13 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 	if !g.Opt.CharsetDetectDisabled && resp.Request.Method != "HEAD" {
 		bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
 		if err != nil {
-			log.Printf("Determine encoding error: %v\n", err)
-			return nil, err
+			return nil, errors.Wrap(err, "Determine encoding error")
 		}
 	}
 
 	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
-		log.Printf("Reading Body error: %v\n", err)
-		return nil, err
+		return nil, errors.Wrap(err, "Reading body error")
 	}
 
 	response := Response{
@@ -277,8 +276,7 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 			return err
 		}),
 	); err != nil {
-		log.Printf("Request getting rendered error: %v\n", err)
-		return nil, err
+		return nil, errors.Wrap(err, "Request getting rendered error")
 	}
 
 	// Set new URL in case of redirection
