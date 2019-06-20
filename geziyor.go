@@ -11,13 +11,10 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
-	"os"
 	"sync"
-	"time"
 )
 
 // Exporter interface is for extracting data to external resources
@@ -42,11 +39,6 @@ type Geziyor struct {
 	responseMiddlewares []ResponseMiddleware
 }
 
-func init() {
-	log.SetOutput(os.Stdout)
-	rand.Seed(time.Now().UnixNano())
-}
-
 // NewGeziyor creates new Geziyor with default values.
 // If options provided, options
 func NewGeziyor(opt *Options) *Geziyor {
@@ -58,6 +50,8 @@ func NewGeziyor(opt *Options) *Geziyor {
 			allowedDomainsMiddleware,
 			duplicateRequestsMiddleware,
 			defaultHeadersMiddleware,
+			delayMiddleware,
+			logMiddleware,
 		},
 		responseMiddlewares: []ResponseMiddleware{
 			parseHTMLMiddleware,
@@ -168,6 +162,8 @@ func (g *Geziyor) Do(req *Request, callback func(g *Geziyor, r *Response)) {
 
 // Do sends an HTTP request
 func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
+	g.acquireSem(req)
+	defer g.releaseSem(req)
 	defer g.wg.Done()
 	defer recoverMiddleware()
 
@@ -205,12 +201,6 @@ func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 }
 
 func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
-	g.acquireSem(req)
-	defer g.releaseSem(req)
-
-	g.delay()
-
-	log.Println("Fetching: ", req.URL.String())
 
 	// Do request
 	resp, err := g.Client.Do(req.Request)
@@ -251,17 +241,12 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 }
 
 func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
-	g.acquireSem(req)
-	defer g.releaseSem(req)
-
-	g.delay()
-
-	ctx, cancel := chromedp.NewContext(context.Background())
-	defer cancel()
-
 	var body string
 	var reqID network.RequestID
 	var res *network.Response
+
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
 
 	if err := chromedp.Run(ctx,
 		network.Enable(),
@@ -337,15 +322,5 @@ func (g *Geziyor) releaseSem(req *Request) {
 	}
 	if g.Opt.ConcurrentRequestsPerDomain != 0 {
 		<-g.semHosts.hostSems[req.Host]
-	}
-}
-
-func (g *Geziyor) delay() {
-	if g.Opt.RequestDelayRandomize {
-		min := float64(g.Opt.RequestDelay) * 0.5
-		max := float64(g.Opt.RequestDelay) * 1.5
-		time.Sleep(time.Duration(rand.Intn(int(max-min)) + int(min)))
-	} else {
-		time.Sleep(g.Opt.RequestDelay)
 	}
 }

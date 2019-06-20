@@ -5,7 +5,10 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor/internal"
 	"log"
+	"math/rand"
+	"os"
 	"runtime/debug"
+	"time"
 )
 
 // RequestMiddleware called before requests made.
@@ -14,6 +17,11 @@ type RequestMiddleware func(g *Geziyor, r *Request)
 
 // ResponseMiddleware called after request response receive
 type ResponseMiddleware func(g *Geziyor, r *Response)
+
+func init() {
+	log.SetOutput(os.Stdout)
+	rand.Seed(time.Now().UnixNano())
+}
 
 // recoverMiddleware recovers scraping being crashed.
 // Logs error and stack trace
@@ -49,6 +57,22 @@ func defaultHeadersMiddleware(g *Geziyor, r *Request) {
 	r.Header = internal.SetDefaultHeader(r.Header, "Accept-Charset", "utf-8")
 	r.Header = internal.SetDefaultHeader(r.Header, "Accept-Language", "en")
 	r.Header = internal.SetDefaultHeader(r.Header, "User-Agent", g.Opt.UserAgent)
+}
+
+// delayMiddleware delays requests
+func delayMiddleware(g *Geziyor, r *Request) {
+	if g.Opt.RequestDelayRandomize {
+		min := float64(g.Opt.RequestDelay) * 0.5
+		max := float64(g.Opt.RequestDelay) * 1.5
+		time.Sleep(time.Duration(rand.Intn(int(max-min)) + int(min)))
+	} else {
+		time.Sleep(g.Opt.RequestDelay)
+	}
+}
+
+// logMiddleware logs requests
+func logMiddleware(g *Geziyor, r *Request) {
+	log.Println("Fetching: ", r.URL.String())
 }
 
 // parseHTMLMiddleware parses response if response is HTML
