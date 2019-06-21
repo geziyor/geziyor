@@ -7,12 +7,14 @@ import (
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/exporter"
+	"github.com/geziyor/geziyor/metrics"
 	"math/rand"
 	"testing"
 	"time"
 )
 
 func TestSimple(t *testing.T) {
+	defer leaktest.Check(t)()
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
@@ -155,5 +157,6 @@ func TestBasicAuth(t *testing.T) {
 			req.SetBasicAuth("username", "password")
 			g.Do(req, nil)
 		},
+		MetricsType: metrics.ExpVar,
 	}).Start()
 }

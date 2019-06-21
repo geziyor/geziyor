@@ -9,9 +9,9 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 - JS Rendering
 - Caching (Memory/Disk)
 - Automatic Data Exporting (JSON, CSV, or custom)
+- Metrics (Prometheus, Expvar, or custom)
 - Limit Concurrency (Global/Per Domain)
 - Request Delays (Constant/Randomized)
-- Metrics (Prometheus)
 - Cookies and Middlewares
 - Automatic response decoding to UTF-8
 

@@ -7,6 +7,7 @@ import (
 	"github.com/chromedp/chromedp"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/internal"
+	"github.com/geziyor/geziyor/metrics"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/html/charset"
@@ -30,7 +31,7 @@ type Geziyor struct {
 	Client  *internal.Client
 	Exports chan interface{}
 
-	metrics             *Metrics
+	metrics             *metrics.Metrics
 	requestMiddlewares  []RequestMiddleware
 	responseMiddlewares []ResponseMiddleware
 	wg                  sync.WaitGroup
@@ -61,7 +62,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 			parseHTMLMiddleware,
 			metricsResponseMiddleware,
 		},
-		metrics: newMetrics(),
+		metrics: metrics.NewMetrics(opt.MetricsType),
 	}
 
 	if opt.UserAgent == "" {
@@ -102,11 +103,14 @@ func NewGeziyor(opt *Options) *Geziyor {
 func (g *Geziyor) Start() {
 	log.Println("Scraping Started")
 
-	// Start metrics
-	go func() {
-		http.Handle("/metrics", promhttp.Handler())
-		http.ListenAndServe(":2112", nil)
-	}()
+	// Metrics
+	metricsServer := &http.Server{Addr: ":2112"}
+	if g.Opt.MetricsType == metrics.Prometheus {
+		go func() {
+			http.Handle("/metrics", promhttp.Handler())
+			metricsServer.ListenAndServe()
+		}()
+	}
 
 	// Start Exporters
 	if len(g.Opt.Exporters) != 0 {
@@ -131,6 +135,7 @@ func (g *Geziyor) Start() {
 
 	g.wg.Wait()
 	close(g.Exports)
+	metricsServer.Close()
 	log.Println("Scraping Finished")
 }
 

@@ -77,7 +77,7 @@ func logMiddleware(g *Geziyor, r *Request) {
 
 // metricsRequestMiddleware sets stats
 func metricsRequestMiddleware(g *Geziyor, r *Request) {
-	g.metrics.requestCount.With("method", r.Method).Add(1)
+	g.metrics.RequestCounter.With("method", r.Method).Add(1)
 }
 
 // parseHTMLMiddleware parses response if response is HTML
@@ -89,5 +89,5 @@ func parseHTMLMiddleware(g *Geziyor, r *Response) {
 
 // metricsResponseMiddleware sets stats
 func metricsResponseMiddleware(g *Geziyor, r *Response) {
-	g.metrics.responseCount.With("method", r.Request.Method).Add(1)
+	g.metrics.ResponseCounter.With("method", r.Request.Method).Add(1)
 }

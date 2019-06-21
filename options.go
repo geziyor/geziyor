@@ -2,6 +2,7 @@ package geziyor
 
 import (
 	"github.com/fpfeng/httpcache"
+	"github.com/geziyor/geziyor/metrics"
 	"time"
 )
 
@@ -67,4 +68,6 @@ type Options struct {
 
 	// If set true, cookies won't send.
 	CookiesDisabled bool
+
+	MetricsType metrics.Type
 }
