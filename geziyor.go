@@ -8,6 +8,7 @@ import (
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/internal"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/net/html/charset"
 	"io"
 	"io/ioutil"
@@ -29,15 +30,16 @@ type Geziyor struct {
 	Client  *internal.Client
 	Exports chan interface{}
 
-	wg        sync.WaitGroup
-	semGlobal chan struct{}
-	semHosts  struct {
+	metrics             *Metrics
+	requestMiddlewares  []RequestMiddleware
+	responseMiddlewares []ResponseMiddleware
+	wg                  sync.WaitGroup
+	semGlobal           chan struct{}
+	semHosts            struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
-	visitedURLs         sync.Map
-	requestMiddlewares  []RequestMiddleware
-	responseMiddlewares []ResponseMiddleware
+	visitedURLs sync.Map
 }
 
 // NewGeziyor creates new Geziyor with default values.
@@ -53,10 +55,13 @@ func NewGeziyor(opt *Options) *Geziyor {
 			defaultHeadersMiddleware,
 			delayMiddleware,
 			logMiddleware,
+			metricsRequestMiddleware,
 		},
 		responseMiddlewares: []ResponseMiddleware{
 			parseHTMLMiddleware,
+			metricsResponseMiddleware,
 		},
+		metrics: newMetrics(),
 	}
 
 	if opt.UserAgent == "" {
@@ -96,6 +101,12 @@ func NewGeziyor(opt *Options) *Geziyor {
 // Start starts scraping
 func (g *Geziyor) Start() {
 	log.Println("Scraping Started")
+
+	// Start metrics
+	go func() {
+		http.Handle("/metrics", promhttp.Handler())
+		http.ListenAndServe(":2112", nil)
+	}()
 
 	// Start Exporters
 	if len(g.Opt.Exporters) != 0 {

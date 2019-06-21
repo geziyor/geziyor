@@ -11,14 +11,14 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 - Automatic Data Exporting (JSON, CSV, or custom)
 - Limit Concurrency (Global/Per Domain)
 - Request Delays (Constant/Randomized)
+- Metrics (Prometheus)
+- Cookies and Middlewares
 - Automatic response decoding to UTF-8
-- Cookies
-- Middlewares
 
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for all custom settings. 
 
 ## Status
-Since the project is in **development phase**, **API may change in time**. Thus, we highly recommend you to use Geziyor with go modules.
+The project is in **development phase**. Thus, we highly recommend you to use Geziyor with go modules.
 
 ## Examples
 Simple usage 
@@ -86,17 +86,12 @@ geziyor.NewGeziyor(&geziyor.Options{
 
 If you want to manually create first requests, set ```StartRequestsFunc```.
 ```StartURLs``` won't be used if you create requests manually.  
-You can make following requests using ```Geziyor``` methods:
-- ```Get```: Make GET request
-- ```GetRendered```: Make GET and render Javascript using Headless Browser. 
-As it opens up a real browser, it takes a couple of seconds to make requests. 
-- ```Head```: Make HEAD request 
-- ```Do```:  Make custom request by providing *geziyor.Request   
-   
+You can make requests using ```Geziyor``` [methods](https://godoc.org/github.com/geziyor/geziyor#Geziyor):
 
 ```go
 geziyor.NewGeziyor(&geziyor.Options{
     StartRequestsFunc: func(g *geziyor.Geziyor) {
+    	g.Get("https://httpbin.org/anything", g.Opt.ParseFunc)
         g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
         g.Head("https://httpbin.org/anything", g.Opt.ParseFunc)
     },
