@@ -44,13 +44,13 @@ func main() {
 }
 
 func quotesParse(g *geziyor.Geziyor, r *geziyor.Response) {
-    r.DocHTML.Find("div.quote").Each(func(i int, s *goquery.Selection) {
+    r.HTMLDoc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
         g.Exports <- map[string]interface{}{
             "text":   s.Find("span.text").Text(),
             "author": s.Find("small.author").Text(),
         }
     })
-    if href, ok := r.DocHTML.Find("li.next > a").Attr("href"); ok {
+    if href, ok := r.HTMLDoc.Find("li.next > a").Attr("href"); ok {
         g.Get(r.JoinURL(href), quotesParse)
     }
 }
