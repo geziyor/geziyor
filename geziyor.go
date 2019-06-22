@@ -270,9 +270,13 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 			chromedp.ListenTarget(ctx, func(ev interface{}) {
 				switch ev.(type) {
 				case *network.EventRequestWillBeSent:
-					if reqEvent := ev.(*network.EventRequestWillBeSent); reqEvent.Request.URL == req.URL.String() {
+					reqEvent := ev.(*network.EventRequestWillBeSent)
+					if _, exists := reqEvent.Request.Headers["Referer"]; !exists {
 						reqID = reqEvent.RequestID
 					}
+					//if reqEvent := ev.(*network.EventRequestWillBeSent); reqEvent.Request.URL == req.URL.String() {
+					//	reqID = reqEvent.RequestID
+					//}
 				case *network.EventResponseReceived:
 					if resEvent := ev.(*network.EventResponseReceived); resEvent.RequestID == reqID {
 						res = resEvent.Response
