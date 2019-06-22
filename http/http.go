@@ -85,9 +85,9 @@ func ConvertHeaderToMap(header http.Header) map[string]interface{} {
 
 // ConvertMapToHeader converts map[string]interface{} to http.Header
 func ConvertMapToHeader(m map[string]interface{}) http.Header {
-	header := make(map[string][]string)
+	header := http.Header{}
 	for k, v := range m {
-		header[k] = []string{v.(string)}
+		header.Set(k, v.(string))
 	}
 	return header
 }
