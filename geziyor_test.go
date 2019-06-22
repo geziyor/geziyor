@@ -46,7 +46,7 @@ func TestQuotes(t *testing.T) {
 }
 
 func quotesParse(g *geziyor.Geziyor, r *geziyor.Response) {
-	r.DocHTML.Find("div.quote").Each(func(i int, s *goquery.Selection) {
+	r.HTMLDoc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
 		// Export Data
 		g.Exports <- map[string]interface{}{
 			"number": i,
@@ -59,7 +59,7 @@ func quotesParse(g *geziyor.Geziyor, r *geziyor.Response) {
 	})
 
 	// Next Page
-	if href, ok := r.DocHTML.Find("li.next > a").Attr("href"); ok {
+	if href, ok := r.HTMLDoc.Find("li.next > a").Attr("href"); ok {
 		g.Get(r.JoinURL(href), quotesParse)
 	}
 }
@@ -72,13 +72,14 @@ func TestAllLinks(t *testing.T) {
 		StartURLs:      []string{"http://books.toscrape.com/"},
 		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
 			g.Exports <- []string{r.Request.URL.String()}
-			r.DocHTML.Find("a").Each(func(i int, s *goquery.Selection) {
+			r.HTMLDoc.Find("a").Each(func(i int, s *goquery.Selection) {
 				if href, ok := s.Attr("href"); ok {
 					g.Get(r.JoinURL(href), g.Opt.ParseFunc)
 				}
 			})
 		},
-		Exporters: []geziyor.Exporter{&exporter.CSVExporter{}},
+		Exporters:   []geziyor.Exporter{&exporter.CSVExporter{}},
+		MetricsType: metrics.Prometheus,
 	}).Start()
 }
 
@@ -97,7 +98,7 @@ func TestStartRequestsFunc(t *testing.T) {
 			g.Get("http://quotes.toscrape.com/", g.Opt.ParseFunc)
 		},
 		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
-			r.DocHTML.Find("a").Each(func(_ int, s *goquery.Selection) {
+			r.HTMLDoc.Find("a").Each(func(_ int, s *goquery.Selection) {
 				g.Exports <- s.AttrOr("href", "")
 			})
 		},

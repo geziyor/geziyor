@@ -12,7 +12,7 @@ import (
 type Response struct {
 	*http.Response
 	Body    []byte
-	DocHTML *goquery.Document
+	HTMLDoc *goquery.Document
 	Meta    map[string]interface{}
 	Request *Request
 }

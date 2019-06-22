@@ -58,7 +58,6 @@ func quotesParse(g *geziyor.Geziyor, r *geziyor.Response) {
 
 See [tests](https://github.com/geziyor/geziyor/blob/master/geziyor_test.go) for more usage examples.
 
-
 ## Documentation
 
 ### Installation
@@ -101,7 +100,25 @@ geziyor.NewGeziyor(&geziyor.Options{
 }).Start()
 ``` 
 
+### Exporting Data
 
+You can export data automatically using exporters. Just send data to ```Geziyor.Exports``` chan.
+[Available exporters](https://godoc.org/github.com/geziyor/geziyor/exporter)
+
+```go
+geziyor.NewGeziyor(&geziyor.Options{
+    StartURLs: []string{"http://quotes.toscrape.com/"},
+    ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+        r.HTMLDoc.Find("div.quote").Each(func(_ int, s *goquery.Selection) {
+            g.Exports <- map[string]interface{}{
+                "text":   s.Find("span.text").Text(),
+                "author": s.Find("small.author").Text(),
+            }
+        })
+    },
+    Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
+}).Start()
+```
 
 ## Roadmap
 
@@ -112,6 +129,6 @@ If you're interested in helping this project, please consider these features:
 - Deploying Scrapers to Cloud
 - ~~Automatically exporting extracted data to multiple places (AWS, FTP, DB, JSON, CSV etc)~~ 
 - Downloading media (Images, Videos etc) (like [this](https://docs.scrapy.org/en/latest/topics/media-pipeline.html))
-- Realtime metrics (Prometheus etc.)
+- ~~Realtime metrics (Prometheus etc.)~~
 
   

@@ -6,7 +6,7 @@ import (
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/fpfeng/httpcache"
-	"github.com/geziyor/geziyor/internal"
+	"github.com/geziyor/geziyor/http"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -14,7 +14,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
+	stdhttp "net/http"
 	"net/http/cookiejar"
 	"net/url"
 	"sync"
@@ -28,7 +28,7 @@ type Exporter interface {
 // Geziyor is our main scraper type
 type Geziyor struct {
 	Opt     *Options
-	Client  *internal.Client
+	Client  *http.Client
 	Exports chan interface{}
 
 	metrics             *metrics.Metrics
@@ -47,7 +47,7 @@ type Geziyor struct {
 // If options provided, options
 func NewGeziyor(opt *Options) *Geziyor {
 	geziyor := &Geziyor{
-		Client:  internal.NewClient(),
+		Client:  http.NewClient(),
 		Opt:     opt,
 		Exports: make(chan interface{}),
 		requestMiddlewares: []RequestMiddleware{
@@ -104,10 +104,10 @@ func (g *Geziyor) Start() {
 	log.Println("Scraping Started")
 
 	// Metrics
-	metricsServer := &http.Server{Addr: ":2112"}
+	metricsServer := &stdhttp.Server{Addr: ":2112"}
 	if g.Opt.MetricsType == metrics.Prometheus {
 		go func() {
-			http.Handle("/metrics", promhttp.Handler())
+			stdhttp.Handle("/metrics", promhttp.Handler())
 			metricsServer.ListenAndServe()
 		}()
 	}
@@ -141,7 +141,7 @@ func (g *Geziyor) Start() {
 
 // Get issues a GET to the specified URL.
 func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *Response)) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := stdhttp.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
@@ -153,7 +153,7 @@ func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *Response)) {
 // Opens up a new Chrome instance, makes request, waits for 1 second to render HTML DOM and closed.
 // Rendered requests only supported for GET requests.
 func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *Response)) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := stdhttp.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
@@ -163,7 +163,7 @@ func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *Response)
 
 // Head issues a HEAD to the specified URL
 func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *Response)) {
-	req, err := http.NewRequest("HEAD", url, nil)
+	req, err := stdhttp.NewRequest("HEAD", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
@@ -265,7 +265,7 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 
 	if err := chromedp.Run(ctx,
 		network.Enable(),
-		network.SetExtraHTTPHeaders(network.Headers(internal.ConvertHeaderToMap(req.Header))),
+		network.SetExtraHTTPHeaders(network.Headers(http.ConvertHeaderToMap(req.Header))),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			chromedp.ListenTarget(ctx, func(ev interface{}) {
 				switch ev.(type) {
@@ -299,10 +299,10 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 	req.URL, _ = url.Parse(res.URL)
 
 	response := Response{
-		Response: &http.Response{
+		Response: &stdhttp.Response{
 			Request:    req.Request,
 			StatusCode: int(res.Status),
-			Header:     internal.ConvertMapToHeader(res.Headers),
+			Header:     http.ConvertMapToHeader(res.Headers),
 		},
 		Body:    []byte(body),
 		Meta:    req.Meta,

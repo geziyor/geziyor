@@ -3,6 +3,7 @@ package geziyor
 import (
 	"bytes"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/geziyor/geziyor/http"
 	"github.com/geziyor/geziyor/internal"
 	"log"
 	"math/rand"
@@ -53,10 +54,10 @@ func duplicateRequestsMiddleware(g *Geziyor, r *Request) {
 
 // defaultHeadersMiddleware sets default request headers
 func defaultHeadersMiddleware(g *Geziyor, r *Request) {
-	r.Header = internal.SetDefaultHeader(r.Header, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-	r.Header = internal.SetDefaultHeader(r.Header, "Accept-Charset", "utf-8")
-	r.Header = internal.SetDefaultHeader(r.Header, "Accept-Language", "en")
-	r.Header = internal.SetDefaultHeader(r.Header, "User-Agent", g.Opt.UserAgent)
+	r.Header = http.SetDefaultHeader(r.Header, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	r.Header = http.SetDefaultHeader(r.Header, "Accept-Charset", "utf-8")
+	r.Header = http.SetDefaultHeader(r.Header, "Accept-Language", "en")
+	r.Header = http.SetDefaultHeader(r.Header, "User-Agent", g.Opt.UserAgent)
 }
 
 // delayMiddleware delays requests
@@ -83,7 +84,7 @@ func metricsRequestMiddleware(g *Geziyor, r *Request) {
 // parseHTMLMiddleware parses response if response is HTML
 func parseHTMLMiddleware(g *Geziyor, r *Response) {
 	if !g.Opt.ParseHTMLDisabled && r.isHTML() {
-		r.DocHTML, _ = goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
+		r.HTMLDoc, _ = goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 	}
 }
 
