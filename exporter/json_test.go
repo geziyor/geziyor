@@ -7,7 +7,7 @@ func TestJSONExporter_Export(t *testing.T) {
 	defer close(ch)
 
 	exporter := &JSONExporter{
-		FileName: "test.json",
+		FileName: "out.json",
 		Indent:   " ",
 	}
 	go exporter.Export(ch)

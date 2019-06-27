@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"sort"
 )
 
 // CSVExporter exports response data as CSV streaming file
@@ -42,11 +43,12 @@ func (e *CSVExporter) Export(exports chan interface{}) {
 			for i := 0; i < val.Len(); i++ {
 				values = append(values, fmt.Sprint(val.Index(i)))
 			}
-			//case reflect.Map:
-			//	iter := val.MapRange()
-			//	for iter.Next() {
-			//		values = append(values, fmt.Sprint(iter.Value()))
-			//	}
+		case reflect.Map:
+			iter := val.MapRange()
+			for iter.Next() {
+				values = append(values, fmt.Sprint(iter.Value()))
+			}
+			sort.Strings(values)
 		}
 		if err := writer.Write(values); err != nil {
 			log.Printf("CSV writing error on exporter: %v\n", err)
