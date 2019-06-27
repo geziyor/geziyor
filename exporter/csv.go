@@ -12,19 +12,24 @@ import (
 // CSVExporter exports response data as CSV streaming file
 type CSVExporter struct {
 	FileName string
+	Comma    rune
+	UseCRLF  bool
 }
 
 // Export exports response data as CSV streaming file
 func (e *CSVExporter) Export(exports chan interface{}) {
 
-	// Create file
-	newFile, err := os.OpenFile(internal.PreferFirst(e.FileName, "out.csv"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	// Create or append file
+	file, err := os.OpenFile(internal.PreferFirst(e.FileName, "out.csv"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Printf("Output file creation error: %v\n", err)
 		return
 	}
+	defer file.Close()
 
-	writer := csv.NewWriter(newFile)
+	writer := csv.NewWriter(file)
+	writer.Comma = internal.PreferFirstRune(e.Comma, ',')
+	writer.UseCRLF = e.UseCRLF
 
 	// Export data as responses came
 	for res := range exports {
