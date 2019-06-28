@@ -8,9 +8,16 @@ import (
 // Request is a small wrapper around *http.Request that contains Metadata and Rendering option
 type Request struct {
 	*http.Request
-	Meta      map[string]interface{}
-	Rendered  bool
-	Cancelled bool
+	Meta         map[string]interface{}
+	Synchronized bool
+	Rendered     bool
+
+	cancelled bool
+}
+
+// Cancel request
+func (r *Request) Cancel() {
+	r.cancelled = true
 }
 
 // NewRequest returns a new Request given a method, URL, and optional body.

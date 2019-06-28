@@ -113,8 +113,9 @@ func (g *Geziyor) Start() {
 	log.Println("Scraping Started")
 
 	// Metrics
-	metricsServer := &stdhttp.Server{Addr: ":2112"}
 	if g.Opt.MetricsType == metrics.Prometheus {
+		metricsServer := &stdhttp.Server{Addr: ":2112"}
+		defer metricsServer.Close()
 		go func() {
 			stdhttp.Handle("/metrics", promhttp.Handler())
 			metricsServer.ListenAndServe()
@@ -144,7 +145,6 @@ func (g *Geziyor) Start() {
 
 	g.wg.Wait()
 	close(g.Exports)
-	metricsServer.Close()
 	log.Println("Scraping Finished")
 }
 
@@ -182,20 +182,26 @@ func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *Response)) {
 
 // Do sends an HTTP request
 func (g *Geziyor) Do(req *Request, callback func(g *Geziyor, r *Response)) {
-	g.wg.Add(1)
-	go g.do(req, callback)
+	if req.Synchronized {
+		g.do(req, callback)
+	} else {
+		g.wg.Add(1)
+		go g.do(req, callback)
+	}
 }
 
 // Do sends an HTTP request
 func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 	g.acquireSem(req)
 	defer g.releaseSem(req)
-	defer g.wg.Done()
+	if !req.Synchronized {
+		defer g.wg.Done()
+	}
 	defer recoverMiddleware()
 
 	for _, middlewareFunc := range g.requestMiddlewares {
 		middlewareFunc(g, req)
-		if req.Cancelled {
+		if req.cancelled {
 			return
 		}
 	}

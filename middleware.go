@@ -38,7 +38,7 @@ func recoverMiddleware() {
 func allowedDomainsMiddleware(g *Geziyor, r *Request) {
 	if len(g.Opt.AllowedDomains) != 0 && !internal.Contains(g.Opt.AllowedDomains, r.Host) {
 		//log.Printf("Domain not allowed: %s\n", req.Host)
-		r.Cancelled = true
+		r.Cancel()
 		return
 	}
 }
@@ -49,7 +49,7 @@ func duplicateRequestsMiddleware(g *Geziyor, r *Request) {
 		key := r.Request.URL.String() + r.Request.Method
 		if _, visited := g.visitedURLs.LoadOrStore(key, struct{}{}); visited {
 			//log.Printf("URL already visited %s\n", rawURL)
-			r.Cancelled = true
+			r.Cancel()
 		}
 	}
 }
@@ -75,7 +75,7 @@ func delayMiddleware(g *Geziyor, r *Request) {
 
 // logMiddleware logs requests
 func logMiddleware(g *Geziyor, r *Request) {
-	log.Println("Fetching: ", r.URL.String())
+	//log.Println("Fetching: ", r.URL.String())
 }
 
 // metricsRequestMiddleware sets stats

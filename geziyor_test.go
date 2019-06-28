@@ -8,8 +8,12 @@ import (
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/exporter"
 	"github.com/geziyor/geziyor/extractor"
+	http2 "github.com/geziyor/geziyor/http"
 	"github.com/geziyor/geziyor/metrics"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"unicode/utf8"
 )
 
 func TestSimple(t *testing.T) {
@@ -162,5 +166,61 @@ func TestExtractor(t *testing.T) {
 			&extractor.Text{Name: "content", Selector: ".c-entry-content"},
 		},
 		Exporters: []geziyor.Exporter{&exporter.JSON{}},
+	}).Start()
+}
+
+func TestCharsetDetection(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "\xf0ültekin")
+	}))
+	defer ts.Close()
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{ts.URL},
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+			if !utf8.Valid(r.Body) {
+				t.Fatal()
+			}
+		},
+		CharsetDetectDisabled: false,
+	}).Start()
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{ts.URL},
+		ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+			if utf8.Valid(r.Body) {
+				t.Fatal()
+			}
+		},
+		CharsetDetectDisabled: true,
+	}).Start()
+}
+
+// Make sure to increase open file descriptor limits before running
+func BenchmarkGeziyor_Do(b *testing.B) {
+
+	// Create Server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "Hello, client")
+	}))
+	ts.Client().Transport = http2.NewClient().Transport
+	defer ts.Close()
+
+	// As we don't benchmark creating a server, reset timer.
+	b.ResetTimer()
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			// Create Synchronized request to benchmark requests accurately.
+			req, _ := geziyor.NewRequest("GET", ts.URL, nil)
+			req.Synchronized = true
+
+			// We only bench here !
+			for i := 0; i < b.N; i++ {
+				g.Do(req, nil)
+			}
+		},
+		URLRevisitEnabled: true,
+		LogDisabled:       true,
 	}).Start()
 }

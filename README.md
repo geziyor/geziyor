@@ -5,9 +5,10 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 [![report card](https://goreportcard.com/badge/github.com/geziyor/geziyor)](http://goreportcard.com/report/geziyor/geziyor)
 
 ## Features
-- 1.000+ Requests/Sec
+- 5.000+ Requests/Sec
 - JS Rendering
 - Caching (Memory/Disk)
+- Automatic Data Extracting (CSS Selectors)
 - Automatic Data Exporting (JSON, CSV, or custom)
 - Metrics (Prometheus, Expvar, or custom)
 - Limit Concurrency (Global/Per Domain)
@@ -103,8 +104,8 @@ geziyor.NewGeziyor(&geziyor.Options{
 ### Extracting Data
 
 #### Extractors
-You can add [Extractor]() to []Extractors option to extract structured data. 
-Exporters need to be defined in order to extractors work. 
+You can add [Extractor](https://godoc.org/github.com/geziyor/geziyor/extractor) to ```[]Extractors``` option to extract structured data. 
+```Exporters``` need to be defined in order extractors to work.
 
 ```go
 geziyor.NewGeziyor(&geziyor.Options{
@@ -157,12 +158,29 @@ geziyor.NewGeziyor(&geziyor.Options{
 }).Start()
 ```
 
+## Benchmark
+
+**8452 request per seconds** on *Macbook Pro 15" 2016*
+
+See [tests](https://github.com/geziyor/geziyor/blob/master/geziyor_test.go) for this benchmark function:
+
+```bash
+>> go test -run none -bench . -benchtime 10s
+goos: darwin
+goarch: amd64
+pkg: github.com/geziyor/geziyor
+BenchmarkGeziyor_Do-8   	  200000	    112493 ns/op
+
+PASS
+ok  	github.com/geziyor/geziyor	23.662s
+```
+
 ## Roadmap
 
 If you're interested in helping this project, please consider these features:
 
 - Command line tool for: pausing and resuming scraper etc. (like [this](https://docs.scrapy.org/en/latest/topics/commands.html))
-- Automatic item extractors (like [this](https://github.com/andrew-d/goscrape#goscrape))
+- ~~Automatic item extractors (like [this](https://github.com/andrew-d/goscrape#goscrape))~~
 - Deploying Scrapers to Cloud
 - ~~Automatically exporting extracted data to multiple places (AWS, FTP, DB, JSON, CSV etc)~~ 
 - Downloading media (Images, Videos etc) (like [this](https://docs.scrapy.org/en/latest/topics/media-pipeline.html))
