@@ -6,7 +6,7 @@ func TestJSONExporter_Export(t *testing.T) {
 	ch := make(chan interface{})
 	defer close(ch)
 
-	exporter := &JSONExporter{
+	exporter := &JSON{
 		FileName: "out.json",
 		Indent:   " ",
 	}

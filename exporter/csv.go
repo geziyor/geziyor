@@ -10,15 +10,15 @@ import (
 	"sort"
 )
 
-// CSVExporter exports response data as CSV streaming file
-type CSVExporter struct {
+// CSV exports response data as CSV streaming file
+type CSV struct {
 	FileName string
 	Comma    rune
 	UseCRLF  bool
 }
 
 // Export exports response data as CSV streaming file
-func (e *CSVExporter) Export(exports chan interface{}) {
+func (e *CSV) Export(exports chan interface{}) {
 
 	// Create or append file
 	file, err := os.OpenFile(internal.PreferFirst(e.FileName, "out.csv"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)

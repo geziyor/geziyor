@@ -2,6 +2,7 @@ package geziyor
 
 import (
 	"context"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
@@ -20,7 +21,14 @@ import (
 	"sync"
 )
 
-// Exporter interface is for extracting data to external resources
+// Extractor interface is for extracting data from HTML document
+type Extractor interface {
+	Extract(doc *goquery.Document) interface{}
+}
+
+// Exporter interface is for extracting data to external resources.
+// Geziyor calls every extractors Export functions before any scraping starts.
+// Export functions should wait for new data from exports chan.
 type Exporter interface {
 	Export(exports chan interface{})
 }
@@ -61,6 +69,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 		responseMiddlewares: []ResponseMiddleware{
 			parseHTMLMiddleware,
 			metricsResponseMiddleware,
+			extractorsMiddleware,
 		},
 		metrics: metrics.NewMetrics(opt.MetricsType),
 	}

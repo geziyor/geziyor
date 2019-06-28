@@ -6,7 +6,7 @@ func TestCSVExporter_Export(t *testing.T) {
 	ch := make(chan interface{})
 	defer close(ch)
 
-	exporter := &CSVExporter{
+	exporter := &CSV{
 		FileName: "out.csv",
 		Comma:    ';',
 	}

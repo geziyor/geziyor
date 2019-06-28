@@ -21,6 +21,9 @@ type Options struct {
 	// ParseFunc is callback of StartURLs response.
 	ParseFunc func(g *Geziyor, r *Response)
 
+	// Extractors extracts items from pages
+	Extractors []Extractor
+
 	// Timeout is global request timeout
 	Timeout time.Duration
 

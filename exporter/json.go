@@ -7,8 +7,8 @@ import (
 	"os"
 )
 
-// JSONExporter exports response data as JSON streaming file
-type JSONExporter struct {
+// JSON exports response data as JSON streaming file
+type JSON struct {
 	FileName   string
 	EscapeHTML bool
 	Prefix     string
@@ -16,7 +16,7 @@ type JSONExporter struct {
 }
 
 // Export exports response data as JSON streaming file
-func (e *JSONExporter) Export(exports chan interface{}) {
+func (e *JSON) Export(exports chan interface{}) {
 
 	// Create or append file
 	file, err := os.OpenFile(internal.PreferFirst(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)

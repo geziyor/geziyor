@@ -2,12 +2,14 @@ package geziyor
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor/http"
 	"github.com/geziyor/geziyor/internal"
 	"log"
 	"math/rand"
 	"os"
+	"reflect"
 	"runtime/debug"
 	"time"
 )
@@ -91,4 +93,28 @@ func parseHTMLMiddleware(g *Geziyor, r *Response) {
 // metricsResponseMiddleware sets stats
 func metricsResponseMiddleware(g *Geziyor, r *Response) {
 	g.metrics.ResponseCounter.With("method", r.Request.Method).Add(1)
+}
+
+// extractorsMiddleware extracts data from loaders conf and exports it to exporters
+func extractorsMiddleware(g *Geziyor, r *Response) {
+
+	// Check if we have extractors and exporters
+	if len(g.Opt.Extractors) != 0 && len(g.Opt.Exporters) != 0 {
+		exports := map[string]interface{}{}
+
+		for _, extractor := range g.Opt.Extractors {
+			extracted := extractor.Extract(r.HTMLDoc)
+
+			// Check extracted data type and use it accordingly
+			val := reflect.ValueOf(extracted)
+			switch val.Kind() {
+			case reflect.Map:
+				r := val.MapRange()
+				for r.Next() {
+					exports[fmt.Sprint(r.Key())] = r.Value().Interface()
+				}
+			}
+		}
+		g.Exports <- exports
+	}
 }

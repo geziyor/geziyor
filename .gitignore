@@ -19,3 +19,6 @@
 
 # Output files
 out.*
+
+# Cache files
+.cache/

@@ -7,10 +7,9 @@ import (
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/exporter"
+	"github.com/geziyor/geziyor/extractor"
 	"github.com/geziyor/geziyor/metrics"
-	"math/rand"
 	"testing"
-	"time"
 )
 
 func TestSimple(t *testing.T) {
@@ -41,7 +40,7 @@ func TestQuotes(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: quotesParse,
-		Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
+		Exporters: []geziyor.Exporter{&exporter.JSON{}},
 	}).Start()
 }
 
@@ -78,18 +77,9 @@ func TestAllLinks(t *testing.T) {
 				}
 			})
 		},
-		Exporters:   []geziyor.Exporter{&exporter.CSVExporter{}},
+		Exporters:   []geziyor.Exporter{&exporter.CSV{}},
 		MetricsType: metrics.Prometheus,
 	}).Start()
-}
-
-func TestRandomDelay(t *testing.T) {
-	rand.Seed(time.Now().UnixNano())
-	delay := time.Millisecond * 1000
-	min := float64(delay) * 0.5
-	max := float64(delay) * 1.5
-	randomDelay := rand.Intn(int(max-min)) + int(min)
-	fmt.Println(time.Duration(randomDelay))
 }
 
 func TestStartRequestsFunc(t *testing.T) {
@@ -102,7 +92,7 @@ func TestStartRequestsFunc(t *testing.T) {
 				g.Exports <- s.AttrOr("href", "")
 			})
 		},
-		Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
+		Exporters: []geziyor.Exporter{&exporter.JSON{}},
 	}).Start()
 }
 
@@ -159,5 +149,18 @@ func TestBasicAuth(t *testing.T) {
 			g.Do(req, nil)
 		},
 		MetricsType: metrics.ExpVar,
+	}).Start()
+}
+
+func TestExtractor(t *testing.T) {
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{"https://www.theverge.com/2019/6/27/18760384/facebook-libra-currency-cryptocurrency-money-transfer-bank-problems-india-china"},
+		Extractors: []geziyor.Extractor{
+			&extractor.Text{Name: "title", Selector: ".c-page-title"},
+			&extractor.Text{Name: "byline", Selector: ".c-byline__item:nth-child(1) > a"},
+			&extractor.Text{Name: "summary", Selector: ".c-entry-summary"},
+			&extractor.Text{Name: "content", Selector: ".c-entry-content"},
+		},
+		Exporters: []geziyor.Exporter{&exporter.JSON{}},
 	}).Start()
 }

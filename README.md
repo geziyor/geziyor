@@ -39,7 +39,7 @@ func main() {
     geziyor.NewGeziyor(&geziyor.Options{
         StartURLs: []string{"http://quotes.toscrape.com/"},
         ParseFunc: quotesParse,
-        Exporters: []geziyor.Exporter{exporter.JSONExporter{}},
+        Exporters: []geziyor.Exporter{exporter.JSON{}},
     }).Start()
 }
 
@@ -100,6 +100,43 @@ geziyor.NewGeziyor(&geziyor.Options{
 }).Start()
 ``` 
 
+### Extracting Data
+
+#### Extractors
+You can add [Extractor]() to []Extractors option to extract structured data. 
+Exporters need to be defined in order to extractors work. 
+
+```go
+geziyor.NewGeziyor(&geziyor.Options{
+    StartURLs: []string{"https://www.theverge.com/2019/6/27/18760384/facebook-libra-currency-cryptocurrency-money-transfer-bank-problems-india-china"},
+    Extractors: []geziyor.Extractor{
+        &extractor.Text{Name: "title", Selector: ".c-page-title"},
+        &extractor.Text{Name: "byline", Selector: ".c-byline__item:nth-child(1) > a"},
+        &extractor.Text{Name: "summary", Selector: ".c-entry-summary"},
+        &extractor.Text{Name: "content", Selector: ".c-entry-content"},
+    },
+    Exporters: []geziyor.Exporter{&exporter.JSON{}},
+}).Start()
+```    
+
+#### HTML selectors
+
+We can extract HTML elements using ```response.HTMLDoc```. HTMLDoc is Goquery's [Document](https://godoc.org/github.com/PuerkitoBio/goquery#Document).
+
+HTMLDoc can be accessible on Response if response is HTML and can be parsed using Go's built-in HTML [parser](https://godoc.org/golang.org/x/net/html#Parse)
+If response isn't HTML, ```response.HTMLDoc``` would be ```nil```.  
+
+```go
+geziyor.NewGeziyor(&geziyor.Options{
+    StartURLs: []string{"http://quotes.toscrape.com/"},
+    ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+        r.HTMLDoc.Find("div.quote").Each(func(_ int, s *goquery.Selection) {
+            log.Println(s.Find("span.text").Text(), s.Find("small.author").Text())
+        })
+    },
+}).Start()
+```
+
 ### Exporting Data
 
 You can export data automatically using exporters. Just send data to ```Geziyor.Exports``` chan.
@@ -116,7 +153,7 @@ geziyor.NewGeziyor(&geziyor.Options{
             }
         })
     },
-    Exporters: []geziyor.Exporter{&exporter.JSONExporter{}},
+    Exporters: []geziyor.Exporter{&exporter.JSON{}},
 }).Start()
 ```
 
