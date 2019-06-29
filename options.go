@@ -2,6 +2,7 @@ package geziyor
 
 import (
 	"github.com/fpfeng/httpcache"
+	"github.com/geziyor/geziyor/http"
 	"github.com/geziyor/geziyor/metrics"
 	"time"
 )
@@ -19,7 +20,7 @@ type Options struct {
 	StartRequestsFunc func(g *Geziyor)
 
 	// ParseFunc is callback of StartURLs response.
-	ParseFunc func(g *Geziyor, r *Response)
+	ParseFunc func(g *Geziyor, r *http.Response)
 
 	// Extractors extracts items from pages
 	Extractors []Extractor

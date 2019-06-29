@@ -1,4 +1,4 @@
-package geziyor
+package http
 
 import (
 	"io"
@@ -11,13 +11,12 @@ type Request struct {
 	Meta         map[string]interface{}
 	Synchronized bool
 	Rendered     bool
-
-	cancelled bool
+	Cancelled    bool
 }
 
 // Cancel request
 func (r *Request) Cancel() {
-	r.cancelled = true
+	r.Cancelled = true
 }
 
 // NewRequest returns a new Request given a method, URL, and optional body.

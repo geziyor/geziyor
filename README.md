@@ -27,7 +27,7 @@ Simple usage
 ```go
 geziyor.NewGeziyor(&geziyor.Options{
     StartURLs: []string{"http://api.ipify.org"},
-    ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+    ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
         fmt.Println(string(r.Body))
     },
 }).Start()
@@ -44,7 +44,7 @@ func main() {
     }).Start()
 }
 
-func quotesParse(g *geziyor.Geziyor, r *geziyor.Response) {
+func quotesParse(g *geziyor.Geziyor, r *http.Response) {
     r.HTMLDoc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
         g.Exports <- map[string]interface{}{
             "text":   s.Find("span.text").Text(),
@@ -78,7 +78,7 @@ After reading response, ```ParseFunc func(g *Geziyor, r *Response)``` called.
 ```go
 geziyor.NewGeziyor(&geziyor.Options{
     StartURLs: []string{"http://api.ipify.org"},
-    ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+    ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
         fmt.Println(string(r.Body))
     },
 }).Start()
@@ -95,7 +95,7 @@ geziyor.NewGeziyor(&geziyor.Options{
         g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
         g.Head("https://httpbin.org/anything", g.Opt.ParseFunc)
     },
-    ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+    ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
         fmt.Println(string(r.Body))
     },
 }).Start()
@@ -130,7 +130,7 @@ If response isn't HTML, ```response.HTMLDoc``` would be ```nil```.
 ```go
 geziyor.NewGeziyor(&geziyor.Options{
     StartURLs: []string{"http://quotes.toscrape.com/"},
-    ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+    ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
         r.HTMLDoc.Find("div.quote").Each(func(_ int, s *goquery.Selection) {
             log.Println(s.Find("span.text").Text(), s.Find("small.author").Text())
         })
@@ -146,7 +146,7 @@ You can export data automatically using exporters. Just send data to ```Geziyor.
 ```go
 geziyor.NewGeziyor(&geziyor.Options{
     StartURLs: []string{"http://quotes.toscrape.com/"},
-    ParseFunc: func(g *geziyor.Geziyor, r *geziyor.Response) {
+    ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
         r.HTMLDoc.Find("div.quote").Each(func(_ int, s *goquery.Selection) {
             g.Exports <- map[string]interface{}{
                 "text":   s.Find("span.text").Text(),

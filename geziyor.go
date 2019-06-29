@@ -149,39 +149,39 @@ func (g *Geziyor) Start() {
 }
 
 // Get issues a GET to the specified URL.
-func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *Response)) {
+func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *http.Response)) {
 	req, err := stdhttp.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(&Request{Request: req}, callback)
+	g.Do(&http.Request{Request: req}, callback)
 }
 
 // GetRendered issues GET request using headless browser
 // Opens up a new Chrome instance, makes request, waits for 1 second to render HTML DOM and closed.
 // Rendered requests only supported for GET requests.
-func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *Response)) {
+func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *http.Response)) {
 	req, err := stdhttp.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(&Request{Request: req, Rendered: true}, callback)
+	g.Do(&http.Request{Request: req, Rendered: true}, callback)
 }
 
 // Head issues a HEAD to the specified URL
-func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *Response)) {
+func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *http.Response)) {
 	req, err := stdhttp.NewRequest("HEAD", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(&Request{Request: req}, callback)
+	g.Do(&http.Request{Request: req}, callback)
 }
 
 // Do sends an HTTP request
-func (g *Geziyor) Do(req *Request, callback func(g *Geziyor, r *Response)) {
+func (g *Geziyor) Do(req *http.Request, callback func(g *Geziyor, r *http.Response)) {
 	if req.Synchronized {
 		g.do(req, callback)
 	} else {
@@ -191,7 +191,7 @@ func (g *Geziyor) Do(req *Request, callback func(g *Geziyor, r *Response)) {
 }
 
 // Do sends an HTTP request
-func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
+func (g *Geziyor) do(req *http.Request, callback func(g *Geziyor, r *http.Response)) {
 	g.acquireSem(req)
 	defer g.releaseSem(req)
 	if !req.Synchronized {
@@ -201,13 +201,13 @@ func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 
 	for _, middlewareFunc := range g.requestMiddlewares {
 		middlewareFunc(g, req)
-		if req.cancelled {
+		if req.Cancelled {
 			return
 		}
 	}
 
 	// Do request normal or Chrome and read response
-	var response *Response
+	var response *http.Response
 	var err error
 	if !req.Rendered {
 		response, err = g.doRequestClient(req)
@@ -233,7 +233,7 @@ func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 	}
 }
 
-func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
+func (g *Geziyor) doRequestClient(req *http.Request) (*http.Response, error) {
 
 	// Do request
 	resp, err := g.Client.Do(req.Request)
@@ -260,7 +260,7 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 		return nil, errors.Wrap(err, "Reading body error")
 	}
 
-	response := Response{
+	response := http.Response{
 		Response: resp,
 		Body:     body,
 		Meta:     req.Meta,
@@ -270,7 +270,7 @@ func (g *Geziyor) doRequestClient(req *Request) (*Response, error) {
 	return &response, nil
 }
 
-func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
+func (g *Geziyor) doRequestChrome(req *http.Request) (*http.Response, error) {
 	var body string
 	var reqID network.RequestID
 	var res *network.Response
@@ -317,7 +317,7 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 	// Set new URL in case of redirection
 	req.URL, _ = url.Parse(res.URL)
 
-	response := Response{
+	response := http.Response{
 		Response: &stdhttp.Response{
 			Request:    req.Request,
 			StatusCode: int(res.Status),
@@ -331,7 +331,7 @@ func (g *Geziyor) doRequestChrome(req *Request) (*Response, error) {
 	return &response, nil
 }
 
-func (g *Geziyor) acquireSem(req *Request) {
+func (g *Geziyor) acquireSem(req *http.Request) {
 	if g.Opt.ConcurrentRequests != 0 {
 		g.semGlobal <- struct{}{}
 	}
@@ -349,7 +349,7 @@ func (g *Geziyor) acquireSem(req *Request) {
 	}
 }
 
-func (g *Geziyor) releaseSem(req *Request) {
+func (g *Geziyor) releaseSem(req *http.Request) {
 	if g.Opt.ConcurrentRequests != 0 {
 		<-g.semGlobal
 	}

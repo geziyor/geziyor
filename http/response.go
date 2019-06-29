@@ -1,4 +1,4 @@
-package geziyor
+package http
 
 import (
 	"github.com/PuerkitoBio/goquery"
@@ -28,7 +28,8 @@ func (r *Response) JoinURL(relativeURL string) string {
 	return joinedURL.String()
 }
 
-func (r *Response) isHTML() bool {
+// IsHTML checks if response content is HTML by looking to content-type header
+func (r *Response) IsHTML() bool {
 	contentType := r.Header.Get("Content-Type")
 	for _, htmlContentType := range []string{"text/html", "application/xhtml+xml", "application/vnd.wap.xhtml+xml"} {
 		if strings.Contains(contentType, htmlContentType) {

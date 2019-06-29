@@ -16,10 +16,10 @@ import (
 
 // RequestMiddleware called before requests made.
 // Set request.Cancelled = true to cancel request
-type RequestMiddleware func(g *Geziyor, r *Request)
+type RequestMiddleware func(g *Geziyor, r *http.Request)
 
 // ResponseMiddleware called after request response receive
-type ResponseMiddleware func(g *Geziyor, r *Response)
+type ResponseMiddleware func(g *Geziyor, r *http.Response)
 
 func init() {
 	log.SetOutput(os.Stdout)
@@ -28,7 +28,7 @@ func init() {
 
 // recoverMiddleware recovers scraping being crashed.
 // Logs error and stack trace
-func recoverMiddleware(g *Geziyor, r *Request) {
+func recoverMiddleware(g *Geziyor, r *http.Request) {
 	if r := recover(); r != nil {
 		log.Println(r, string(debug.Stack()))
 		g.metrics.PanicCounter.Add(1)
@@ -36,7 +36,7 @@ func recoverMiddleware(g *Geziyor, r *Request) {
 }
 
 // allowedDomainsMiddleware checks for request host if it exists in AllowedDomains
-func allowedDomainsMiddleware(g *Geziyor, r *Request) {
+func allowedDomainsMiddleware(g *Geziyor, r *http.Request) {
 	if len(g.Opt.AllowedDomains) != 0 && !internal.Contains(g.Opt.AllowedDomains, r.Host) {
 		//log.Printf("Domain not allowed: %s\n", req.Host)
 		r.Cancel()
@@ -45,7 +45,7 @@ func allowedDomainsMiddleware(g *Geziyor, r *Request) {
 }
 
 // duplicateRequestsMiddleware checks for already visited URLs
-func duplicateRequestsMiddleware(g *Geziyor, r *Request) {
+func duplicateRequestsMiddleware(g *Geziyor, r *http.Request) {
 	if !g.Opt.URLRevisitEnabled {
 		key := r.Request.URL.String() + r.Request.Method
 		if _, visited := g.visitedURLs.LoadOrStore(key, struct{}{}); visited {
@@ -56,7 +56,7 @@ func duplicateRequestsMiddleware(g *Geziyor, r *Request) {
 }
 
 // defaultHeadersMiddleware sets default request headers
-func defaultHeadersMiddleware(g *Geziyor, r *Request) {
+func defaultHeadersMiddleware(g *Geziyor, r *http.Request) {
 	r.Header = http.SetDefaultHeader(r.Header, "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	r.Header = http.SetDefaultHeader(r.Header, "Accept-Charset", "utf-8")
 	r.Header = http.SetDefaultHeader(r.Header, "Accept-Language", "en")
@@ -64,7 +64,7 @@ func defaultHeadersMiddleware(g *Geziyor, r *Request) {
 }
 
 // delayMiddleware delays requests
-func delayMiddleware(g *Geziyor, r *Request) {
+func delayMiddleware(g *Geziyor, r *http.Request) {
 	if g.Opt.RequestDelayRandomize {
 		min := float64(g.Opt.RequestDelay) * 0.5
 		max := float64(g.Opt.RequestDelay) * 1.5
@@ -75,29 +75,29 @@ func delayMiddleware(g *Geziyor, r *Request) {
 }
 
 // logMiddleware logs requests
-func logMiddleware(g *Geziyor, r *Request) {
+func logMiddleware(g *Geziyor, r *http.Request) {
 	log.Println("Fetching: ", r.URL.String())
 }
 
 // metricsRequestMiddleware sets stats
-func metricsRequestMiddleware(g *Geziyor, r *Request) {
+func metricsRequestMiddleware(g *Geziyor, r *http.Request) {
 	g.metrics.RequestCounter.With("method", r.Method).Add(1)
 }
 
 // parseHTMLMiddleware parses response if response is HTML
-func parseHTMLMiddleware(g *Geziyor, r *Response) {
-	if !g.Opt.ParseHTMLDisabled && r.isHTML() {
+func parseHTMLMiddleware(g *Geziyor, r *http.Response) {
+	if !g.Opt.ParseHTMLDisabled && r.IsHTML() {
 		r.HTMLDoc, _ = goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 	}
 }
 
 // metricsResponseMiddleware sets stats
-func metricsResponseMiddleware(g *Geziyor, r *Response) {
+func metricsResponseMiddleware(g *Geziyor, r *http.Response) {
 	g.metrics.ResponseCounter.With("method", r.Request.Method).Add(1)
 }
 
 // extractorsMiddleware extracts data from loaders conf and exports it to exporters
-func extractorsMiddleware(g *Geziyor, r *Response) {
+func extractorsMiddleware(g *Geziyor, r *http.Response) {
 
 	// Check if we have extractors and exporters
 	if len(g.Opt.Extractors) != 0 && len(g.Opt.Exporters) != 0 {
