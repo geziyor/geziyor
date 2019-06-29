@@ -28,9 +28,10 @@ func init() {
 
 // recoverMiddleware recovers scraping being crashed.
 // Logs error and stack trace
-func recoverMiddleware() {
+func recoverMiddleware(g *Geziyor, r *Request) {
 	if r := recover(); r != nil {
 		log.Println(r, string(debug.Stack()))
+		g.metrics.PanicCounter.Add(1)
 	}
 }
 
@@ -75,7 +76,7 @@ func delayMiddleware(g *Geziyor, r *Request) {
 
 // logMiddleware logs requests
 func logMiddleware(g *Geziyor, r *Request) {
-	//log.Println("Fetching: ", r.URL.String())
+	log.Println("Fetching: ", r.URL.String())
 }
 
 // metricsRequestMiddleware sets stats

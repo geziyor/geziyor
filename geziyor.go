@@ -197,7 +197,7 @@ func (g *Geziyor) do(req *Request, callback func(g *Geziyor, r *Response)) {
 	if !req.Synchronized {
 		defer g.wg.Done()
 	}
-	defer recoverMiddleware()
+	defer recoverMiddleware(g, req)
 
 	for _, middlewareFunc := range g.requestMiddlewares {
 		middlewareFunc(g, req)

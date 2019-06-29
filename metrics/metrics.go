@@ -26,6 +26,7 @@ const (
 type Metrics struct {
 	RequestCounter  metrics.Counter
 	ResponseCounter metrics.Counter
+	PanicCounter    metrics.Counter
 }
 
 // NewMetrics creates new metrics with given metrics.Type
@@ -35,11 +36,13 @@ func NewMetrics(metricsType Type) *Metrics {
 		return &Metrics{
 			RequestCounter:  discard.NewCounter(),
 			ResponseCounter: discard.NewCounter(),
+			PanicCounter:    discard.NewCounter(),
 		}
 	case ExpVar:
 		return &Metrics{
 			RequestCounter:  expvar.NewCounter("request_count"),
 			ResponseCounter: expvar.NewCounter("response_count"),
+			PanicCounter:    expvar.NewCounter("panic_count"),
 		}
 	case Prometheus:
 		return &Metrics{
@@ -53,6 +56,11 @@ func NewMetrics(metricsType Type) *Metrics {
 				Name:      "response_count",
 				Help:      "Response count",
 			}, []string{"method"}),
+			PanicCounter: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+				Namespace: "geziyor",
+				Name:      "panic_count",
+				Help:      "Panic count",
+			}, []string{}),
 		}
 	default:
 		return nil
