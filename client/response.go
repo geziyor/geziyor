@@ -1,4 +1,4 @@
-package http
+package client
 
 import (
 	"github.com/PuerkitoBio/goquery"

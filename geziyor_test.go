@@ -6,11 +6,11 @@ import (
 	"github.com/fortytw2/leaktest"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor"
+	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/exporter"
 	"github.com/geziyor/geziyor/extractor"
-	"github.com/geziyor/geziyor/http"
 	"github.com/geziyor/geziyor/metrics"
-	httpstd "net/http"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"unicode/utf8"
@@ -20,7 +20,7 @@ func TestSimple(t *testing.T) {
 	defer leaktest.Check(t)()
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			fmt.Println(string(r.Body))
 		},
 	}).Start()
@@ -31,7 +31,7 @@ func TestSimpleCache(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		Cache:     httpcache.NewMemoryCache(),
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			fmt.Println(string(r.Body))
 			g.Exports <- string(r.Body)
 			g.Get("http://api.ipify.org", nil)
@@ -48,7 +48,7 @@ func TestQuotes(t *testing.T) {
 	}).Start()
 }
 
-func quotesParse(g *geziyor.Geziyor, r *http.Response) {
+func quotesParse(g *geziyor.Geziyor, r *client.Response) {
 	r.HTMLDoc.Find("div.quote").Each(func(i int, s *goquery.Selection) {
 		// Export Data
 		g.Exports <- map[string]interface{}{
@@ -73,7 +73,7 @@ func TestAllLinks(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		AllowedDomains: []string{"books.toscrape.com"},
 		StartURLs:      []string{"http://books.toscrape.com/"},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			g.Exports <- []string{r.Request.URL.String()}
 			r.HTMLDoc.Find("a").Each(func(i int, s *goquery.Selection) {
 				if href, ok := s.Attr("href"); ok {
@@ -91,7 +91,7 @@ func TestStartRequestsFunc(t *testing.T) {
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			g.Get("http://quotes.toscrape.com/", g.Opt.ParseFunc)
 		},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			r.HTMLDoc.Find("a").Each(func(_ int, s *goquery.Selection) {
 				g.Exports <- s.AttrOr("href", "")
 			})
@@ -105,7 +105,7 @@ func TestGetRendered(t *testing.T) {
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
 		},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			fmt.Println(string(r.Body))
 			fmt.Println(r.Header)
 		},
@@ -118,7 +118,7 @@ func TestHEADRequest(t *testing.T) {
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			g.Head("https://httpbin.org/anything", g.Opt.ParseFunc)
 		},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			fmt.Println(string(r.Body))
 		},
 	}).Start()
@@ -127,7 +127,7 @@ func TestHEADRequest(t *testing.T) {
 func TestCookies(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/login"},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			if len(g.Client.Cookies(r.Request.URL.String())) == 0 {
 				t.Fatal("Cookies is Empty")
 			}
@@ -136,7 +136,7 @@ func TestCookies(t *testing.T) {
 
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/login"},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			if len(g.Client.Cookies(r.Request.URL.String())) != 0 {
 				t.Fatal("Cookies exist")
 			}
@@ -148,7 +148,7 @@ func TestCookies(t *testing.T) {
 func TestBasicAuth(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
-			req, _ := http.NewRequest("GET", "https://httpbin.org/anything", nil)
+			req, _ := client.NewRequest("GET", "https://httpbin.org/anything", nil)
 			req.SetBasicAuth("username", "password")
 			g.Do(req, nil)
 		},
@@ -170,14 +170,14 @@ func TestExtractor(t *testing.T) {
 }
 
 func TestCharsetDetection(t *testing.T) {
-	ts := httptest.NewServer(httpstd.HandlerFunc(func(w httpstd.ResponseWriter, r *httpstd.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "\xf0ültekin")
 	}))
 	defer ts.Close()
 
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{ts.URL},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			if !utf8.Valid(r.Body) {
 				t.Fatal()
 			}
@@ -187,7 +187,7 @@ func TestCharsetDetection(t *testing.T) {
 
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{ts.URL},
-		ParseFunc: func(g *geziyor.Geziyor, r *http.Response) {
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			if utf8.Valid(r.Body) {
 				t.Fatal()
 			}
@@ -200,10 +200,10 @@ func TestCharsetDetection(t *testing.T) {
 func BenchmarkGeziyor_Do(b *testing.B) {
 
 	// Create Server
-	ts := httptest.NewServer(httpstd.HandlerFunc(func(w httpstd.ResponseWriter, r *httpstd.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Hello, client")
 	}))
-	ts.Client().Transport = http.NewClient().Transport
+	ts.Client().Transport = client.NewClient().Transport
 	defer ts.Close()
 
 	// As we don't benchmark creating a server, reset timer.
@@ -212,7 +212,7 @@ func BenchmarkGeziyor_Do(b *testing.B) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
 			// Create Synchronized request to benchmark requests accurately.
-			req, _ := http.NewRequest("GET", ts.URL, nil)
+			req, _ := client.NewRequest("GET", ts.URL, nil)
 			req.Synchronized = true
 
 			// We only bench here !
