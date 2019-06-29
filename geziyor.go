@@ -42,7 +42,8 @@ type Geziyor struct {
 	metrics             *metrics.Metrics
 	requestMiddlewares  []RequestMiddleware
 	responseMiddlewares []ResponseMiddleware
-	wg                  sync.WaitGroup
+	wgRequests          sync.WaitGroup
+	wgExporters         sync.WaitGroup
 	semGlobal           chan struct{}
 	semHosts            struct {
 		sync.RWMutex
@@ -124,13 +125,19 @@ func (g *Geziyor) Start() {
 
 	// Start Exporters
 	if len(g.Opt.Exporters) != 0 {
+		g.wgExporters.Add(len(g.Opt.Exporters))
 		for _, exp := range g.Opt.Exporters {
-			go exp.Export(g.Exports)
+			go func() {
+				defer g.wgExporters.Done()
+				exp.Export(g.Exports)
+			}()
 		}
 	} else {
+		g.wgExporters.Add(1)
 		go func() {
 			for range g.Exports {
 			}
+			g.wgExporters.Done()
 		}()
 	}
 
@@ -143,8 +150,9 @@ func (g *Geziyor) Start() {
 		g.Opt.StartRequestsFunc(g)
 	}
 
-	g.wg.Wait()
+	g.wgRequests.Wait()
 	close(g.Exports)
+	g.wgExporters.Wait()
 	log.Println("Scraping Finished")
 }
 
@@ -185,7 +193,7 @@ func (g *Geziyor) Do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	if req.Synchronized {
 		g.do(req, callback)
 	} else {
-		g.wg.Add(1)
+		g.wgRequests.Add(1)
 		go g.do(req, callback)
 	}
 }
@@ -195,7 +203,7 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	g.acquireSem(req)
 	defer g.releaseSem(req)
 	if !req.Synchronized {
-		defer g.wg.Done()
+		defer g.wgRequests.Done()
 	}
 	defer recoverMiddleware(g, req)
 
