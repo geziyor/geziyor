@@ -107,7 +107,11 @@ func extractorsMiddleware(g *Geziyor, r *client.Response) {
 		exports := map[string]interface{}{}
 
 		for _, extractor := range g.Opt.Extractors {
-			extracted := extractor.Extract(r.HTMLDoc)
+			extracted, err := extractor.Extract(r.HTMLDoc)
+			if err != nil {
+				log.Println("extraction error: ", err)
+				continue
+			}
 
 			// Check extracted data type and use it accordingly
 			val := reflect.ValueOf(extracted)

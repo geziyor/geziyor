@@ -13,7 +13,7 @@ import (
 
 // Extractor interface is for extracting data from HTML document
 type Extractor interface {
-	Extract(doc *goquery.Document) interface{}
+	Extract(doc *goquery.Document) (interface{}, error)
 }
 
 // Exporter interface is for extracting data to external resources.
