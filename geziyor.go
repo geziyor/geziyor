@@ -1,23 +1,15 @@
 package geziyor
 
 import (
-	"context"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/chromedp/cdproto/dom"
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/chromedp"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/metrics"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"golang.org/x/net/html/charset"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
 	"sync"
 )
 
@@ -214,129 +206,24 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 		}
 	}
 
-	// Do request normal or Chrome and read response
-	var response *client.Response
-	var err error
-	if !req.Rendered {
-		response, err = g.doRequestClient(req)
-	} else {
-		response, err = g.doRequestChrome(req)
-	}
+	res, err := g.Client.DoRequest(req, g.Opt.MaxBodySize, g.Opt.CharsetDetectDisabled)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
 	for _, middlewareFunc := range g.responseMiddlewares {
-		middlewareFunc(g, response)
+		middlewareFunc(g, res)
 	}
 
 	// Callbacks
 	if callback != nil {
-		callback(g, response)
+		callback(g, res)
 	} else {
 		if g.Opt.ParseFunc != nil {
-			g.Opt.ParseFunc(g, response)
+			g.Opt.ParseFunc(g, res)
 		}
 	}
-}
-
-func (g *Geziyor) doRequestClient(req *client.Request) (*client.Response, error) {
-
-	// Do request
-	resp, err := g.Client.Do(req.Request)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
-	if err != nil {
-		return nil, errors.Wrap(err, "Response error")
-	}
-
-	// Limit response body reading
-	bodyReader := io.LimitReader(resp.Body, g.Opt.MaxBodySize)
-
-	// Start reading body and determine encoding
-	if !g.Opt.CharsetDetectDisabled && resp.Request.Method != "HEAD" {
-		bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
-		if err != nil {
-			return nil, errors.Wrap(err, "Determine encoding error")
-		}
-	}
-
-	body, err := ioutil.ReadAll(bodyReader)
-	if err != nil {
-		return nil, errors.Wrap(err, "Reading body error")
-	}
-
-	response := client.Response{
-		Response: resp,
-		Body:     body,
-		Meta:     req.Meta,
-		Request:  req,
-	}
-
-	return &response, nil
-}
-
-func (g *Geziyor) doRequestChrome(req *client.Request) (*client.Response, error) {
-	var body string
-	var reqID network.RequestID
-	var res *network.Response
-
-	ctx, cancel := chromedp.NewContext(context.Background())
-	defer cancel()
-
-	if err := chromedp.Run(ctx,
-		network.Enable(),
-		network.SetExtraHTTPHeaders(network.Headers(client.ConvertHeaderToMap(req.Header))),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			chromedp.ListenTarget(ctx, func(ev interface{}) {
-				switch ev.(type) {
-				case *network.EventRequestWillBeSent:
-					reqEvent := ev.(*network.EventRequestWillBeSent)
-					if _, exists := reqEvent.Request.Headers["Referer"]; !exists {
-						reqID = reqEvent.RequestID
-					}
-					//if reqEvent := ev.(*network.EventRequestWillBeSent); reqEvent.Request.URL == req.URL.String() {
-					//	reqID = reqEvent.RequestID
-					//}
-				case *network.EventResponseReceived:
-					if resEvent := ev.(*network.EventResponseReceived); resEvent.RequestID == reqID {
-						res = resEvent.Response
-					}
-				}
-			})
-			return nil
-		}),
-		chromedp.Navigate(req.URL.String()),
-		chromedp.WaitReady(":root"),
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			node, err := dom.GetDocument().Do(ctx)
-			if err != nil {
-				return err
-			}
-			body, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
-			return err
-		}),
-	); err != nil {
-		return nil, errors.Wrap(err, "Request getting rendered error")
-	}
-
-	// Set new URL in case of redirection
-	req.URL, _ = url.Parse(res.URL)
-
-	response := client.Response{
-		Response: &http.Response{
-			Request:    req.Request,
-			StatusCode: int(res.Status),
-			Header:     client.ConvertMapToHeader(res.Headers),
-		},
-		Body:    []byte(body),
-		Meta:    req.Meta,
-		Request: req,
-	}
-
-	return &response, nil
 }
 
 func (g *Geziyor) acquireSem(req *client.Request) {

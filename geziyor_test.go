@@ -68,6 +68,9 @@ func quotesParse(g *geziyor.Geziyor, r *client.Response) {
 }
 
 func TestAllLinks(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
 	defer leaktest.Check(t)()
 
 	geziyor.NewGeziyor(&geziyor.Options{
