@@ -76,7 +76,10 @@ func delayMiddleware(g *Geziyor, r *client.Request) {
 
 // logMiddleware logs requests
 func logMiddleware(g *Geziyor, r *client.Request) {
-	log.Println("Fetching: ", r.URL.String())
+	// LogDisabled check is not necessary, but done here for performance reasons
+	if !g.Opt.LogDisabled {
+		log.Println("Fetching: ", r.URL.String())
+	}
 }
 
 // metricsRequestMiddleware sets stats

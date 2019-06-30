@@ -6,6 +6,8 @@ import (
 	"github.com/go-kit/kit/metrics/expvar"
 	"github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
 )
 
 // Type represents metrics Types
@@ -65,4 +67,18 @@ func NewMetrics(metricsType Type) *Metrics {
 	default:
 		return nil
 	}
+}
+
+// StartMetricsServer starts server that handles metrics
+// Prometheus: http://localhost:2112/metrics
+// Expvar    : http://localhost:2112/debug/vars
+func StartMetricsServer(metricsType Type) *http.Server {
+	if metricsType == Prometheus {
+		http.Handle("/metrics", promhttp.Handler())
+	}
+	server := &http.Server{Addr: ":2112"}
+	go func() {
+		server.ListenAndServe()
+	}()
+	return server
 }

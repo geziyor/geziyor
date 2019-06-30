@@ -5,10 +5,8 @@ import (
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/metrics"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"net/http/cookiejar"
 	"sync"
 )
@@ -106,13 +104,9 @@ func (g *Geziyor) Start() {
 	log.Println("Scraping Started")
 
 	// Metrics
-	if g.Opt.MetricsType == metrics.Prometheus {
-		metricsServer := &http.Server{Addr: ":2112"}
+	if g.Opt.MetricsType == metrics.Prometheus || g.Opt.MetricsType == metrics.ExpVar {
+		metricsServer := metrics.StartMetricsServer(g.Opt.MetricsType)
 		defer metricsServer.Close()
-		go func() {
-			http.Handle("/metrics", promhttp.Handler())
-			metricsServer.ListenAndServe()
-		}()
 	}
 
 	// Start Exporters
@@ -150,34 +144,35 @@ func (g *Geziyor) Start() {
 
 // Get issues a GET to the specified URL.
 func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *client.Response)) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := client.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(&client.Request{Request: req}, callback)
+	g.Do(req, callback)
 }
 
 // GetRendered issues GET request using headless browser
 // Opens up a new Chrome instance, makes request, waits for 1 second to render HTML DOM and closed.
 // Rendered requests only supported for GET requests.
 func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *client.Response)) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := client.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(&client.Request{Request: req, Rendered: true}, callback)
+	req.Rendered = true
+	g.Do(req, callback)
 }
 
 // Head issues a HEAD to the specified URL
 func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *client.Response)) {
-	req, err := http.NewRequest("HEAD", url, nil)
+	req, err := client.NewRequest("HEAD", url, nil)
 	if err != nil {
 		log.Printf("Request creating error %v\n", err)
 		return
 	}
-	g.Do(&client.Request{Request: req}, callback)
+	g.Do(req, callback)
 }
 
 // Do sends an HTTP request
