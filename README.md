@@ -111,13 +111,13 @@ You can add [Extractor](https://godoc.org/github.com/geziyor/geziyor/extractor) 
 geziyor.NewGeziyor(&geziyor.Options{
     StartURLs: []string{"https://www.theverge.com/2019/6/27/18760384/facebook-libra-currency-cryptocurrency-money-transfer-bank-problems-india-china"},
     Extractors: []geziyor.Extractor{
-			&extract.HTML{Name: "entry_html", Selector: ".c-entry-hero__content"},
-			&extract.Text{Name: "title", Selector: ".c-page-title"},
-			&extract.OuterHTML{Name: "title_html", Selector: ".c-page-title"},
-			&extract.Text{Name: "author", Selector: ".c-byline__item:nth-child(1) > a"},
-			&extract.Attr{Name: "author_url", Selector: ".c-byline__item:nth-child(1) > a", Attr: "href"},
-			&extract.Text{Name: "summary", Selector: ".c-entry-summary"},
-			&extract.Text{Name: "content", Selector: ".c-entry-content"},
+            &extract.HTML{Name: "entry_html", Selector: ".c-entry-hero__content"},
+            &extract.Text{Name: "title", Selector: ".c-page-title"},
+            &extract.OuterHTML{Name: "title_html", Selector: ".c-page-title"},
+            &extract.Text{Name: "author", Selector: ".c-byline__item:nth-child(1) > a"},
+            &extract.Attr{Name: "author_url", Selector: ".c-byline__item:nth-child(1) > a", Attr: "href"},
+            &extract.Text{Name: "summary", Selector: ".c-entry-summary"},
+            &extract.Text{Name: "content", Selector: ".c-entry-content"},
     },
     Exporters: []geziyor.Exporter{&export.JSON{}},
 }).Start()
@@ -168,14 +168,13 @@ geziyor.NewGeziyor(&geziyor.Options{
 See [tests](https://github.com/geziyor/geziyor/blob/master/geziyor_test.go) for this benchmark function:
 
 ```bash
->> go test -run none -bench . -benchtime 10s
+>> go test -run none -bench Requests -benchtime 10s
 goos: darwin
 goarch: amd64
 pkg: github.com/geziyor/geziyor
-BenchmarkGeziyor_Do-8   	  200000	    112493 ns/op
-
+BenchmarkRequests-8   	  200000	    108710 ns/op
 PASS
-ok  	github.com/geziyor/geziyor	23.662s
+ok  	github.com/geziyor/geziyor	22.861s
 ```
 
 ## Roadmap

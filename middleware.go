@@ -46,9 +46,8 @@ func allowedDomainsMiddleware(g *Geziyor, r *client.Request) {
 
 // duplicateRequestsMiddleware checks for already visited URLs
 func duplicateRequestsMiddleware(g *Geziyor, r *client.Request) {
-	if !g.Opt.URLRevisitEnabled {
-		key := r.Request.URL.String() + r.Request.Method
-		if _, visited := g.visitedURLs.LoadOrStore(key, struct{}{}); visited {
+	if !g.Opt.URLRevisitEnabled && r.Request.Method == "GET" {
+		if _, visited := g.visitedURLs.LoadOrStore(r.Request.URL.String(), struct{}{}); visited {
 			//log.Printf("URL already visited %s\n", rawURL)
 			r.Cancel()
 		}

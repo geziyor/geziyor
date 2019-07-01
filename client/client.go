@@ -207,3 +207,13 @@ func ConvertMapToHeader(m map[string]interface{}) http.Header {
 	}
 	return header
 }
+
+// NewRedirectionHandler returns maximum allowed redirection function with provided maxRedirect
+func NewRedirectionHandler(maxRedirect int) func(req *http.Request, via []*http.Request) error {
+	return func(req *http.Request, via []*http.Request) error {
+		if len(via) >= maxRedirect {
+			return errors.Errorf("stopped after %d redirects", maxRedirect)
+		}
+		return nil
+	}
+}

@@ -61,6 +61,9 @@ type Options struct {
 	// Max body reading size in bytes. Default: 1GB
 	MaxBodySize int64
 
+	// Maximum redirection time. Default: 10
+	MaxRedirect int
+
 	// Charset Detection disable
 	CharsetDetectDisabled bool
 

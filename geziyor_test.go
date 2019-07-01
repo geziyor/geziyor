@@ -202,8 +202,29 @@ func TestCharsetDetection(t *testing.T) {
 	}).Start()
 }
 
+func TestRedirect(t *testing.T) {
+	defer leaktest.Check(t)()
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{"https://httpbin.org/absolute-redirect/1"},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			//t.Fail()
+		},
+		MaxRedirect: -1,
+	}).Start()
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{"https://httpbin.org/absolute-redirect/1"},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			if r.StatusCode == 302 {
+				t.Fail()
+			}
+		},
+		MaxRedirect: 0,
+	}).Start()
+}
+
 // Make sure to increase open file descriptor limits before running
-func BenchmarkGeziyor_Do(b *testing.B) {
+func BenchmarkRequests(b *testing.B) {
 
 	// Create Server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -229,4 +250,24 @@ func BenchmarkGeziyor_Do(b *testing.B) {
 		URLRevisitEnabled: true,
 		LogDisabled:       true,
 	}).Start()
+}
+
+func BenchmarkWhole(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		geziyor.NewGeziyor(&geziyor.Options{
+			AllowedDomains: []string{"quotes.toscrape.com"},
+			StartURLs:      []string{"http://quotes.toscrape.com/"},
+			ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+				g.Exports <- []string{r.Request.URL.String()}
+				r.HTMLDoc.Find("a").Each(func(i int, s *goquery.Selection) {
+					if href, ok := s.Attr("href"); ok {
+						g.Get(r.JoinURL(href), g.Opt.ParseFunc)
+					}
+				})
+			},
+			Exporters: []geziyor.Exporter{&export.CSV{}},
+			//MetricsType: metrics.Prometheus,
+			LogDisabled: true,
+		}).Start()
+	}
 }

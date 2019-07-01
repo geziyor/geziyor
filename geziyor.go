@@ -48,7 +48,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 	geziyor := &Geziyor{
 		Client:  client.NewClient(),
 		Opt:     opt,
-		Exports: make(chan interface{}),
+		Exports: make(chan interface{}, 1),
 		requestMiddlewares: []RequestMiddleware{
 			allowedDomainsMiddleware,
 			duplicateRequestsMiddleware,
@@ -80,6 +80,9 @@ func NewGeziyor(opt *Options) *Geziyor {
 	}
 	if !opt.CookiesDisabled {
 		geziyor.Client.Jar, _ = cookiejar.New(nil)
+	}
+	if opt.MaxRedirect != 0 {
+		geziyor.Client.CheckRedirect = client.NewRedirectionHandler(opt.MaxRedirect)
 	}
 	if opt.ConcurrentRequests != 0 {
 		geziyor.semGlobal = make(chan struct{}, opt.ConcurrentRequests)
