@@ -153,7 +153,7 @@ func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *client.Response))
 }
 
 // GetRendered issues GET request using headless browser
-// Opens up a new Chrome instance, makes request, waits for 1 second to render HTML DOM and closed.
+// Opens up a new Chrome instance, makes request, waits for rendering HTML DOM and closed.
 // Rendered requests only supported for GET requests.
 func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *client.Response)) {
 	req, err := client.NewRequest("GET", url, nil)

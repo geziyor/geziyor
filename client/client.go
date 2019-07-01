@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -95,7 +96,6 @@ func (c *Client) DoRequestClient(req *Request, maxBodySize int64, charsetDetectD
 // DoRequestChrome opens up a new chrome instance and makes request
 func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 	var body string
-	var reqID network.RequestID
 	var res *network.Response
 
 	ctx, cancel := chromedp.NewContext(context.Background())
@@ -105,16 +105,16 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 		network.Enable(),
 		network.SetExtraHTTPHeaders(network.Headers(ConvertHeaderToMap(req.Header))),
 		chromedp.ActionFunc(func(ctx context.Context) error {
+			var reqID network.RequestID
 			chromedp.ListenTarget(ctx, func(ev interface{}) {
 				switch ev.(type) {
 				case *network.EventRequestWillBeSent:
 					reqEvent := ev.(*network.EventRequestWillBeSent)
 					if _, exists := reqEvent.Request.Headers["Referer"]; !exists {
-						reqID = reqEvent.RequestID
+						if strings.HasPrefix(reqEvent.Request.URL, "http") {
+							reqID = reqEvent.RequestID
+						}
 					}
-					//if reqEvent := ev.(*network.EventRequestWillBeSent); reqEvent.Request.URL == req.URL.String() {
-					//	reqID = reqEvent.RequestID
-					//}
 				case *network.EventResponseReceived:
 					if resEvent := ev.(*network.EventResponseReceived); resEvent.RequestID == reqID {
 						res = resEvent.Response
@@ -144,6 +144,7 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 		Response: &http.Response{
 			Request:    req.Request,
 			StatusCode: int(res.Status),
+			Proto:      res.Protocol,
 			Header:     ConvertMapToHeader(res.Headers),
 		},
 		Body:    []byte(body),
