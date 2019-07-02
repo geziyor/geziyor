@@ -1,7 +1,6 @@
 package geziyor
 
 import (
-	"github.com/PuerkitoBio/goquery"
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/metrics"
@@ -10,18 +9,6 @@ import (
 	"net/http/cookiejar"
 	"sync"
 )
-
-// Extractor interface is for extracting data from HTML document
-type Extractor interface {
-	Extract(doc *goquery.Document) (interface{}, error)
-}
-
-// Exporter interface is for extracting data to external resources.
-// Geziyor calls every extractors Export functions before any scraping starts.
-// Export functions should wait for new data from exports chan.
-type Exporter interface {
-	Export(exports chan interface{})
-}
 
 // Geziyor is our main scraper type
 type Geziyor struct {

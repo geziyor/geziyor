@@ -3,6 +3,8 @@ package geziyor
 import (
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/client"
+	"github.com/geziyor/geziyor/export"
+	"github.com/geziyor/geziyor/extract"
 	"github.com/geziyor/geziyor/metrics"
 	"time"
 )
@@ -23,7 +25,7 @@ type Options struct {
 	ParseFunc func(g *Geziyor, r *client.Response)
 
 	// Extractors extracts items from pages
-	Extractors []Extractor
+	Extractors []extract.Extractor
 
 	// Timeout is global request timeout
 	Timeout time.Duration
@@ -50,7 +52,7 @@ type Options struct {
 	LogDisabled bool
 
 	// For extracting data
-	Exporters []Exporter
+	Exporters []export.Exporter
 
 	// Called before requests made to manipulate requests
 	RequestMiddlewares []RequestMiddleware

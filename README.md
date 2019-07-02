@@ -40,7 +40,7 @@ func main() {
     geziyor.NewGeziyor(&geziyor.Options{
         StartURLs: []string{"http://quotes.toscrape.com/"},
         ParseFunc: quotesParse,
-        Exporters: []geziyor.Exporter{export.JSON{}},
+        Exporters: []export.Exporter{export.JSON{}},
     }).Start()
 }
 
@@ -110,7 +110,7 @@ You can add [Extractor](https://godoc.org/github.com/geziyor/geziyor/extractor) 
 ```go
 geziyor.NewGeziyor(&geziyor.Options{
     StartURLs: []string{"https://www.theverge.com/2019/6/27/18760384/facebook-libra-currency-cryptocurrency-money-transfer-bank-problems-india-china"},
-    Extractors: []geziyor.Extractor{
+    Extractors: []extract.Extractor{
             &extract.HTML{Name: "entry_html", Selector: ".c-entry-hero__content"},
             &extract.Text{Name: "title", Selector: ".c-page-title"},
             &extract.OuterHTML{Name: "title_html", Selector: ".c-page-title"},
@@ -119,7 +119,7 @@ geziyor.NewGeziyor(&geziyor.Options{
             &extract.Text{Name: "summary", Selector: ".c-entry-summary"},
             &extract.Text{Name: "content", Selector: ".c-entry-content"},
     },
-    Exporters: []geziyor.Exporter{&export.JSON{}},
+    Exporters: []export.Exporter{&export.JSON{}},
 }).Start()
 ```    
 
@@ -157,7 +157,7 @@ geziyor.NewGeziyor(&geziyor.Options{
             }
         })
     },
-    Exporters: []geziyor.Exporter{&export.JSON{}},
+    Exporters: []export.Exporter{&export.JSON{}},
 }).Start()
 ```
 

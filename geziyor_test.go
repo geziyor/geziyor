@@ -44,7 +44,7 @@ func TestQuotes(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: quotesParse,
-		Exporters: []geziyor.Exporter{&export.JSON{}},
+		Exporters: []export.Exporter{&export.JSON{}},
 	}).Start()
 }
 
@@ -84,7 +84,7 @@ func TestAllLinks(t *testing.T) {
 				}
 			})
 		},
-		Exporters:   []geziyor.Exporter{&export.CSV{}},
+		Exporters:   []export.Exporter{&export.CSV{}},
 		MetricsType: metrics.Prometheus,
 	}).Start()
 }
@@ -99,7 +99,7 @@ func TestStartRequestsFunc(t *testing.T) {
 				g.Exports <- s.AttrOr("href", "")
 			})
 		},
-		Exporters: []geziyor.Exporter{&export.JSON{}},
+		Exporters: []export.Exporter{&export.JSON{}},
 	}).Start()
 }
 
@@ -162,7 +162,7 @@ func TestBasicAuth(t *testing.T) {
 func TestExtractor(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"https://www.theverge.com/2019/6/27/18760384/facebook-libra-currency-cryptocurrency-money-transfer-bank-problems-india-china"},
-		Extractors: []geziyor.Extractor{
+		Extractors: []extract.Extractor{
 			&extract.HTML{Name: "entry_html", Selector: ".c-entry-hero__content"},
 			&extract.Text{Name: "title", Selector: ".c-page-title"},
 			&extract.OuterHTML{Name: "title_html", Selector: ".c-page-title"},
@@ -171,7 +171,7 @@ func TestExtractor(t *testing.T) {
 			&extract.Text{Name: "summary", Selector: ".c-entry-summary"},
 			&extract.Text{Name: "content", Selector: ".c-entry-content"},
 		},
-		Exporters: []geziyor.Exporter{&export.JSON{}},
+		Exporters: []export.Exporter{&export.JSON{}},
 	}).Start()
 }
 
@@ -265,7 +265,7 @@ func BenchmarkWhole(b *testing.B) {
 					}
 				})
 			},
-			Exporters: []geziyor.Exporter{&export.CSV{}},
+			Exporters: []export.Exporter{&export.CSV{}},
 			//MetricsType: metrics.Prometheus,
 			LogDisabled: true,
 		}).Start()
