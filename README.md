@@ -3,6 +3,7 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 
 [![GoDoc](https://godoc.org/github.com/geziyor/geziyor?status.svg)](https://godoc.org/github.com/geziyor/geziyor)
 [![report card](https://goreportcard.com/badge/github.com/geziyor/geziyor)](http://goreportcard.com/report/geziyor/geziyor)
+[![Code Coverage](https://img.shields.io/codecov/c/github/geziyor/geziyor/master.svg)](https://codecov.io/github/geziyor/geziyor?branch=master)
 
 ## Features
 - 5.000+ Requests/Sec
@@ -163,7 +164,7 @@ geziyor.NewGeziyor(&geziyor.Options{
 
 ## Benchmark
 
-**8452 request per seconds** on *Macbook Pro 15" 2016*
+**8748 request per seconds** on *Macbook Pro 15" 2016*
 
 See [tests](https://github.com/geziyor/geziyor/blob/master/geziyor_test.go) for this benchmark function:
 

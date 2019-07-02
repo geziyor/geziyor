@@ -26,7 +26,6 @@ func (e *HTML) Extract(doc *goquery.Document) (interface{}, error) {
 		ret += h
 		return true
 	})
-
 	if err != nil {
 		return nil, err
 	}

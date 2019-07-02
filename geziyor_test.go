@@ -92,7 +92,7 @@ func TestAllLinks(t *testing.T) {
 func TestStartRequestsFunc(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
-			g.Get("http://quotes.toscrape.com/", g.Opt.ParseFunc)
+			g.Get("http://quotes.toscrape.com/", nil)
 		},
 		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			r.HTMLDoc.Find("a").Each(func(_ int, s *goquery.Selection) {
@@ -220,6 +220,15 @@ func TestRedirect(t *testing.T) {
 			}
 		},
 		MaxRedirect: 0,
+	}).Start()
+}
+
+func TestConcurrentRequests(t *testing.T) {
+	defer leaktest.Check(t)()
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs:                   []string{"https://httpbin.org/delay/1", "https://httpbin.org/delay/2"},
+		ConcurrentRequests:          1,
+		ConcurrentRequestsPerDomain: 1,
 	}).Start()
 }
 

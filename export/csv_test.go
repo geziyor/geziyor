@@ -1,17 +1,29 @@
 package export
 
-import "testing"
+import (
+	"io/ioutil"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+)
 
 func TestCSVExporter_Export(t *testing.T) {
-	ch := make(chan interface{})
-	defer close(ch)
-
 	exporter := &CSV{
 		FileName: "out.csv",
 		Comma:    ';',
 	}
-	go exporter.Export(ch)
+	_ = os.Remove(exporter.FileName)
+	exports := make(chan interface{})
+	go exporter.Export(exports)
 
-	ch <- []string{"1", "2"}
-	ch <- map[string]string{"key1": "value1", "key2": "value2"}
+	exports <- []string{"1", "2"}
+	exports <- map[string]string{"key1": "value1", "key2": "value2"}
+	close(exports)
+	time.Sleep(time.Millisecond)
+
+	contents, err := ioutil.ReadFile(exporter.FileName)
+	assert.NoError(t, err)
+	assert.Equal(t, "1;2\nvalue1;value2\n", string(contents))
 }

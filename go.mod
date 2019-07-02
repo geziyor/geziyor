@@ -12,6 +12,7 @@ require (
 	github.com/go-kit/kit v0.8.0
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0
+	github.com/stretchr/testify v1.3.0
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
 	golang.org/x/text v0.3.2 // indirect
 )
