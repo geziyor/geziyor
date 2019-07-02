@@ -3,6 +3,7 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 
 [![GoDoc](https://godoc.org/github.com/geziyor/geziyor?status.svg)](https://godoc.org/github.com/geziyor/geziyor)
 [![report card](https://goreportcard.com/badge/github.com/geziyor/geziyor)](http://goreportcard.com/report/geziyor/geziyor)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgeziyor%2Fgeziyor.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgeziyor%2Fgeziyor?ref=badge_shield)
 
 ## Features
 - 5.000+ Requests/Sec
@@ -189,3 +190,6 @@ If you're interested in helping this project, please consider these features:
 - ~~Realtime metrics (Prometheus etc.)~~
 
   
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fgeziyor%2Fgeziyor.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fgeziyor%2Fgeziyor?ref=badge_large)
