@@ -1,14 +1,13 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
-	"github.com/musabgultekin/chardet"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
+	"golang.org/x/text/transform"
 	"io"
 	"io/ioutil"
 	"net"
@@ -75,38 +74,25 @@ func (c *Client) DoRequestClient(req *Request, maxBodySize int64, charsetDetectD
 	// Limit response body reading
 	bodyReader := io.LimitReader(resp.Body, maxBodySize)
 
-	// Convert response if encoding provided
-	if req.Encoding != "" && resp.Request.Method != "HEAD" {
-		bodyReader, err = charset.NewReader(bodyReader, "text/html; charset="+req.Encoding)
-		if err != nil {
-			return nil, errors.Wrap(err, "Reading provided encoding error")
+	// Decode response
+	if resp.Request.Method != "HEAD" {
+		if req.Encoding != "" {
+			if enc, _ := charset.Lookup(req.Encoding); enc != nil {
+				bodyReader = transform.NewReader(bodyReader, enc.NewDecoder())
+			}
+		} else {
+			if !charsetDetectDisabled {
+				bodyReader, err = charset.NewReader(bodyReader, req.Header.Get("Content-Type"))
+				if err != nil {
+					return nil, errors.Wrap(err, "Reading determined encoding error")
+				}
+			}
 		}
 	}
 
 	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
 		return nil, errors.Wrap(err, "Reading body error")
-	}
-
-	// Decoding body
-	if req.Encoding == "" && resp.Request.Method != "HEAD" {
-		contentType := resp.Header.Get("Content-Type")
-		// Charset detection
-		// If enabled and charset not provided in content-type
-		if !charsetDetectDisabled && !strings.Contains(contentType, "charset") {
-			if res, err := chardet.NewHtmlDetector().DetectBest(body); err == nil {
-				contentType = "text/html; charset=" + res.Charset
-			}
-		}
-		convertedReader, err := charset.NewReader(bytes.NewReader(body), contentType)
-		if err != nil {
-			return nil, errors.Wrap(err, "Determine encoding error")
-		}
-		convertedBody, err := ioutil.ReadAll(convertedReader)
-		if err != nil {
-			return nil, errors.Wrap(err, "Determine encoding error")
-		}
-		body = convertedBody
 	}
 
 	response := Response{
