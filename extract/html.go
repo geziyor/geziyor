@@ -13,11 +13,11 @@ type HTML struct {
 }
 
 // Extract extracts and returns the HTML from inside each element of the given selection.
-func (e *HTML) Extract(doc *goquery.Document) (interface{}, error) {
+func (e HTML) Extract(sel *goquery.Selection) (interface{}, error) {
 	var ret, h string
 	var err error
 
-	doc.Find(e.Selector).EachWithBreak(func(i int, s *goquery.Selection) bool {
+	sel.Find(e.Selector).EachWithBreak(func(i int, s *goquery.Selection) bool {
 		h, err = s.Html()
 		if err != nil {
 			return false
@@ -40,9 +40,9 @@ type OuterHTML struct {
 }
 
 // Extract extracts and returns the HTML of each element of the given selection.
-func (e *OuterHTML) Extract(doc *goquery.Document) (interface{}, error) {
+func (e OuterHTML) Extract(sel *goquery.Selection) (interface{}, error) {
 	output := bytes.NewBufferString("")
-	for _, node := range doc.Find(e.Selector).Nodes {
+	for _, node := range sel.Find(e.Selector).Nodes {
 		if err := html.Render(output, node); err != nil {
 			return nil, err
 		}

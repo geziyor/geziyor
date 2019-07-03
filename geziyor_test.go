@@ -162,13 +162,13 @@ func TestExtractor(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"https://www.theverge.com/2019/6/27/18760384/facebook-libra-currency-cryptocurrency-money-transfer-bank-problems-india-china"},
 		Extractors: []extract.Extractor{
-			&extract.HTML{Name: "entry_html", Selector: ".c-entry-hero__content"},
-			&extract.Text{Name: "title", Selector: ".c-page-title"},
-			&extract.OuterHTML{Name: "title_html", Selector: ".c-page-title"},
-			&extract.Text{Name: "author", Selector: ".c-byline__item:nth-child(1) > a"},
-			&extract.Attr{Name: "author_url", Selector: ".c-byline__item:nth-child(1) > a", Attr: "href"},
-			&extract.Text{Name: "summary", Selector: ".c-entry-summary"},
-			&extract.Text{Name: "content", Selector: ".c-entry-content"},
+			extract.HTML{Name: "entry_html", Selector: ".c-entry-hero__content"},
+			extract.Text{Name: "title", Selector: ".c-page-title"},
+			extract.OuterHTML{Name: "title_html", Selector: ".c-page-title"},
+			extract.Text{Name: "author", Selector: ".c-byline__item:nth-child(1) > a"},
+			extract.Attr{Name: "author_url", Selector: ".c-byline__item:nth-child(1) > a", Attr: "href"},
+			extract.Text{Name: "summary", Selector: ".c-entry-summary"},
+			extract.Text{Name: "content", Selector: ".c-entry-content"},
 		},
 		Exporters: []export.Exporter{&export.JSON{}},
 	}).Start()

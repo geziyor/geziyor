@@ -15,8 +15,8 @@ type Attr struct {
 }
 
 // Extract returns HTML attribute value of provided selector
-func (e *Attr) Extract(doc *goquery.Document) (interface{}, error) {
-	attr, exists := doc.Find(e.Selector).Attr(e.Attr)
+func (e Attr) Extract(sel *goquery.Selection) (interface{}, error) {
+	attr, exists := sel.Find(e.Selector).Attr(e.Attr)
 	if !exists {
 		return nil, ErrAttrNotExists
 	}

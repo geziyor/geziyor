@@ -98,7 +98,6 @@ func (c *Client) DoRequestClient(req *Request, maxBodySize int64, charsetDetectD
 	response := Response{
 		Response: resp,
 		Body:     body,
-		Meta:     req.Meta,
 		Request:  req,
 	}
 
@@ -161,7 +160,6 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 			Header:     ConvertMapToHeader(res.Headers),
 		},
 		Body:    []byte(body),
-		Meta:    req.Meta,
 		Request: req,
 	}
 

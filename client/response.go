@@ -11,9 +11,13 @@ import (
 // Contains parsed response data and Geziyor functions.
 type Response struct {
 	*http.Response
-	Body    []byte
+
+	// Response body
+	Body []byte
+
+	// Goquery Document object. If response IsHTML, its non-nil.
 	HTMLDoc *goquery.Document
-	Meta    map[string]interface{}
+
 	Request *Request
 }
 
