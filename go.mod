@@ -10,6 +10,7 @@ require (
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/fpfeng/httpcache v0.0.0-20181220155740-6b8f16a92be3
 	github.com/go-kit/kit v0.8.0
+	github.com/musabgultekin/chardet v0.0.0-20190703142329-3f8ab18f5ee7
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0
 	github.com/stretchr/testify v1.3.0

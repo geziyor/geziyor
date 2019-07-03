@@ -53,10 +53,10 @@ func NewGeziyor(opt *Options) *Geziyor {
 	}
 
 	if opt.UserAgent == "" {
-		geziyor.Opt.UserAgent = "Geziyor 1.0"
+		geziyor.Opt.UserAgent = client.DefaultUserAgent
 	}
 	if opt.MaxBodySize == 0 {
-		geziyor.Opt.MaxBodySize = 1024 * 1024 * 1024 // 1GB
+		geziyor.Opt.MaxBodySize = client.DefaultMaxBody
 	}
 	if opt.Cache != nil {
 		geziyor.Client.Transport = &httpcache.Transport{

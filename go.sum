@@ -13,6 +13,8 @@ github.com/chromedp/cdproto v0.0.0-20190609032908-dd39f0bf0a54 h1:2NlKweNkC3yy6I
 github.com/chromedp/cdproto v0.0.0-20190609032908-dd39f0bf0a54/go.mod h1:5NWqr1Ri5aJB5uSvUXfVpbBslleS+eMjspUWv2Lcaow=
 github.com/chromedp/chromedp v0.3.1-0.20190617065505-d55cf9043e05 h1:5iy45UjpWvkgTcd7GrGQSPr7sifrp9nNweI/eAsMjGE=
 github.com/chromedp/chromedp v0.3.1-0.20190617065505-d55cf9043e05/go.mod h1:MsTqWB2yT7cErDFnF1F3y0PN8i/a/qQj+0GXKLW/I3s=
+github.com/chshawkn-pub/chardet v0.0.0-20160202204651-99815dcde191 h1:3+K6ySWX+ur+IziS7YE1D0Us8HQkHjBoTWzmcnVcws4=
+github.com/chshawkn-pub/chardet v0.0.0-20160202204651-99815dcde191/go.mod h1:IKsHWTi5UkZBZJJtaVIk18w/Geisj1vFG2wV7zFRi9I=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -46,6 +48,8 @@ github.com/matttproud/golang_protobuf_extensions v1.0.1 h1:4hp9jkHxhMHkqkrB3Ix0j
 github.com/matttproud/golang_protobuf_extensions v1.0.1/go.mod h1:D8He9yQNgCq6Z5Ld7szi9bcBfOoFv/3dc6xSMkL2PC0=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.1/go.mod h1:bx2lNnkwVCuqBIxFjflWJWanXIb3RllmbCylyMrvgv0=
+github.com/musabgultekin/chardet v0.0.0-20190703142329-3f8ab18f5ee7 h1:btpAkst4HX1a4UgexN/LASOwvtycli7+TEUZ3ovb9cQ=
+github.com/musabgultekin/chardet v0.0.0-20190703142329-3f8ab18f5ee7/go.mod h1:IwGQg7OmA3BFgV3X+Ww2W5JT6kh5Ua4/gRIKZBt7gWs=
 github.com/mwitkow/go-conntrack v0.0.0-20161129095857-cc309e4a2223/go.mod h1:qRWi+5nqEBWmkhHvq77mSJWrCKwh8bxhgT7d/eI7P4U=
 github.com/pkg/errors v0.8.0/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.8.1 h1:iURUrRGxPUNPdy5/HRSm+Yj6okJ6UtLINN0Q9M4+h3I=
@@ -69,6 +73,8 @@ github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0 h1:TivCn/peBQ7UY8ooIcPgZFpTNSz0Q2U6UrFlUfqbe0Q=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
+github.com/zhl-home1/chardet v0.0.0-20160202204651-99815dcde191 h1:CXfTd0yQDeEhscRudH7YUSJSu1RkJhRLswIMfiKyZic=
+github.com/zhl-home1/chardet v0.0.0-20160202204651-99815dcde191/go.mod h1:pEa4IVfMX0hSsE/jpJ0vKsZFXZjL6oSwtKvRiBoMimg=
 golang.org/x/crypto v0.0.0-20180904163835-0709b304e793/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

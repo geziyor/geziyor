@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"unicode/utf8"
 )
 
 func TestSimple(t *testing.T) {
@@ -172,33 +171,6 @@ func TestExtractor(t *testing.T) {
 			&extract.Text{Name: "content", Selector: ".c-entry-content"},
 		},
 		Exporters: []export.Exporter{&export.JSON{}},
-	}).Start()
-}
-
-func TestCharsetDetection(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprint(w, "\xf0ültekin")
-	}))
-	defer ts.Close()
-
-	geziyor.NewGeziyor(&geziyor.Options{
-		StartURLs: []string{ts.URL},
-		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
-			if !utf8.Valid(r.Body) {
-				t.Fatal()
-			}
-		},
-		CharsetDetectDisabled: false,
-	}).Start()
-
-	geziyor.NewGeziyor(&geziyor.Options{
-		StartURLs: []string{ts.URL},
-		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
-			if utf8.Valid(r.Body) {
-				t.Fatal()
-			}
-		},
-		CharsetDetectDisabled: true,
 	}).Start()
 }
 

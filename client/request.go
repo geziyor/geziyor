@@ -12,6 +12,7 @@ type Request struct {
 	Synchronized bool
 	Rendered     bool
 	Cancelled    bool
+	Encoding     string
 }
 
 // Cancel request

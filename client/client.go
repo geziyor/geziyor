@@ -1,10 +1,12 @@
 package client
 
 import (
+	"bytes"
 	"context"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	"github.com/musabgultekin/chardet"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"io"
@@ -25,6 +27,9 @@ var (
 type Client struct {
 	*http.Client
 }
+
+const DefaultUserAgent = "Geziyor 1.0"
+const DefaultMaxBody int64 = 1024 * 1024 * 1024 // 1GB
 
 // NewClient creates http.Client with modified values for typical web scraper
 func NewClient() *Client {
@@ -70,17 +75,38 @@ func (c *Client) DoRequestClient(req *Request, maxBodySize int64, charsetDetectD
 	// Limit response body reading
 	bodyReader := io.LimitReader(resp.Body, maxBodySize)
 
-	// Start reading body and determine encoding
-	if !charsetDetectDisabled && resp.Request.Method != "HEAD" {
-		bodyReader, err = charset.NewReader(bodyReader, resp.Header.Get("Content-Type"))
+	// Convert response if encoding provided
+	if req.Encoding != "" && resp.Request.Method != "HEAD" {
+		bodyReader, err = charset.NewReader(bodyReader, "text/html; charset="+req.Encoding)
 		if err != nil {
-			return nil, errors.Wrap(err, "Determine encoding error")
+			return nil, errors.Wrap(err, "Reading provided encoding error")
 		}
 	}
 
 	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
 		return nil, errors.Wrap(err, "Reading body error")
+	}
+
+	// Decoding body
+	if req.Encoding == "" && resp.Request.Method != "HEAD" {
+		contentType := resp.Header.Get("Content-Type")
+		// Charset detection
+		// If enabled and charset not provided in content-type
+		if !charsetDetectDisabled && !strings.Contains(contentType, "charset") {
+			if res, err := chardet.NewHtmlDetector().DetectBest(body); err == nil {
+				contentType = "text/html; charset=" + res.Charset
+			}
+		}
+		convertedReader, err := charset.NewReader(bytes.NewReader(body), contentType)
+		if err != nil {
+			return nil, errors.Wrap(err, "Determine encoding error")
+		}
+		convertedBody, err := ioutil.ReadAll(convertedReader)
+		if err != nil {
+			return nil, errors.Wrap(err, "Determine encoding error")
+		}
+		body = convertedBody
 	}
 
 	response := Response{
@@ -137,7 +163,8 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 		return nil, errors.Wrap(err, "Request getting rendered error")
 	}
 
-	// Set new URL in case of redirection
+	// Update changed data
+	req.Header = ConvertMapToHeader(res.RequestHeaders)
 	req.URL, _ = url.Parse(res.URL)
 
 	response := Response{

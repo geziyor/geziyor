@@ -1,7 +1,9 @@
 package client
 
 import (
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 )
@@ -87,5 +89,51 @@ func TestConvertMapToHeader(t *testing.T) {
 				t.Errorf("ConvertMapToHeader() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestCharsetFromHeaders(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=iso-8859-9")
+		fmt.Fprint(w, "G\xfcltekin")
+	}))
+	defer ts.Close()
+
+	req, _ := NewRequest("GET", ts.URL, nil)
+	res, _ := NewClient().DoRequestClient(req, DefaultMaxBody, false)
+
+	if string(res.Body) != "Gültekin" {
+		t.Fatal(string(res.Body))
+	}
+}
+
+func TestCharsetFromBody(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprint(w, "G\xfcltekin")
+	}))
+	defer ts.Close()
+
+	req, _ := NewRequest("GET", ts.URL, nil)
+	res, _ := NewClient().DoRequestClient(req, DefaultMaxBody, false)
+
+	if string(res.Body) != "Gültekin" {
+		t.Fatal(string(res.Body))
+	}
+}
+
+func TestCharsetProvidedWithRequest(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprint(w, "G\xfcltekin")
+	}))
+	defer ts.Close()
+
+	req, _ := NewRequest("GET", ts.URL, nil)
+	req.Encoding = "windows-1254"
+	res, _ := NewClient().DoRequestClient(req, DefaultMaxBody, false)
+
+	if string(res.Body) != "Gültekin" {
+		t.Fatal(string(res.Body))
 	}
 }
