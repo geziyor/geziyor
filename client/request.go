@@ -26,6 +26,8 @@ type Request struct {
 
 	// Set this true to cancel requests. Should be used on middlewares.
 	Cancelled bool
+
+	retryCounter int
 }
 
 // Cancel request

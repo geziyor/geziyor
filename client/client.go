@@ -10,6 +10,7 @@ import (
 	"golang.org/x/text/transform"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -25,14 +26,25 @@ var (
 // Client is a small wrapper around *http.Client to provide new methods.
 type Client struct {
 	*http.Client
+	maxBodySize           int64
+	charsetDetectDisabled bool
+	retryTimes            int
+	retryHTTPCodes        []int
 }
 
-const DefaultUserAgent = "Geziyor 1.0"
-const DefaultMaxBody int64 = 1024 * 1024 * 1024 // 1GB
+const (
+	DefaultUserAgent        = "Geziyor 1.0"
+	DefaultMaxBody    int64 = 1024 * 1024 * 1024 // 1GB
+	DefaultRetryTimes       = 2
+)
+
+var (
+	DefaultRetryHTTPCodes = []int{500, 502, 503, 504, 522, 524, 408}
+)
 
 // NewClient creates http.Client with modified values for typical web scraper
-func NewClient() *Client {
-	client := &http.Client{
+func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, retryHTTPCodes []int) *Client {
+	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
@@ -48,31 +60,57 @@ func NewClient() *Client {
 		},
 		Timeout: time.Second * 180, // Google's timeout
 	}
-	return &Client{Client: client}
+
+	client := Client{
+		Client:                httpClient,
+		maxBodySize:           maxBodySize,
+		charsetDetectDisabled: charsetDetectDisabled,
+		retryTimes:            retryTimes,
+		retryHTTPCodes:        retryHTTPCodes,
+	}
+
+	return &client
 }
 
 // DoRequest selects appropriate request handler, client or Chrome
-func (c *Client) DoRequest(req *Request, maxBodySize int64, charsetDetectDisabled bool) (*Response, error) {
+func (c *Client) DoRequest(req *Request) (*Response, error) {
 	if !req.Rendered {
-		return c.DoRequestClient(req, maxBodySize, charsetDetectDisabled)
+		return c.DoRequestClient(req)
 	} else {
 		return c.DoRequestChrome(req)
 	}
 }
 
 // DoRequestClient is a simple wrapper to read response according to options.
-func (c *Client) DoRequestClient(req *Request, maxBodySize int64, charsetDetectDisabled bool) (*Response, error) {
+func (c *Client) DoRequestClient(req *Request) (*Response, error) {
 	// Do request
 	resp, err := c.Do(req.Request)
 	if resp != nil {
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		// Retry on Error
+		if req.retryCounter < c.retryTimes {
+			req.retryCounter++
+			log.Println("Retrying:", req.URL.String())
+			return c.DoRequestClient(req)
+		}
 		return nil, errors.Wrap(err, "Response error")
 	}
 
+	// Checks status code to retry
+	if req.retryCounter < c.retryTimes {
+		for _, statusCode := range c.retryHTTPCodes {
+			if resp.StatusCode == statusCode {
+				req.retryCounter++
+				log.Println("Retrying:", req.URL.String(), resp.StatusCode)
+				return c.DoRequestClient(req)
+			}
+		}
+	}
+
 	// Limit response body reading
-	bodyReader := io.LimitReader(resp.Body, maxBodySize)
+	bodyReader := io.LimitReader(resp.Body, c.maxBodySize)
 
 	// Decode response
 	if resp.Request.Method != "HEAD" {
@@ -81,7 +119,7 @@ func (c *Client) DoRequestClient(req *Request, maxBodySize int64, charsetDetectD
 				bodyReader = transform.NewReader(bodyReader, enc.NewDecoder())
 			}
 		} else {
-			if !charsetDetectDisabled {
+			if !c.charsetDetectDisabled {
 				bodyReader, err = charset.NewReader(bodyReader, req.Header.Get("Content-Type"))
 				if err != nil {
 					return nil, errors.Wrap(err, "Reading determined encoding error")

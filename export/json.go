@@ -19,7 +19,7 @@ type JSON struct {
 func (e *JSON) Export(exports chan interface{}) {
 
 	// Create or append file
-	file, err := os.OpenFile(internal.PreferFirst(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Printf("Output file creation error: %v\n", err)
 		return

@@ -33,7 +33,6 @@ type Geziyor struct {
 // If options provided, options
 func NewGeziyor(opt *Options) *Geziyor {
 	geziyor := &Geziyor{
-		Client:  client.NewClient(),
 		Opt:     opt,
 		Exports: make(chan interface{}, 1),
 		requestMiddlewares: []RequestMiddleware{
@@ -52,12 +51,21 @@ func NewGeziyor(opt *Options) *Geziyor {
 		metrics: metrics.NewMetrics(opt.MetricsType),
 	}
 
+	// Default
 	if opt.UserAgent == "" {
-		geziyor.Opt.UserAgent = client.DefaultUserAgent
+		opt.UserAgent = client.DefaultUserAgent
 	}
 	if opt.MaxBodySize == 0 {
-		geziyor.Opt.MaxBodySize = client.DefaultMaxBody
+		opt.MaxBodySize = client.DefaultMaxBody
 	}
+	if opt.RetryTimes == 0 {
+		opt.RetryTimes = client.DefaultRetryTimes
+	}
+	if len(opt.RetryHTTPCodes) == 0 {
+		opt.RetryHTTPCodes = client.DefaultRetryHTTPCodes
+	}
+	// Client
+	geziyor.Client = client.NewClient(opt.MaxBodySize, opt.CharsetDetectDisabled, opt.RetryTimes, opt.RetryHTTPCodes)
 	if opt.Cache != nil {
 		geziyor.Client.Transport = &httpcache.Transport{
 			Transport: geziyor.Client.Transport, Cache: opt.Cache, MarkCachedResponses: true}
@@ -71,6 +79,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 	if opt.MaxRedirect != 0 {
 		geziyor.Client.CheckRedirect = client.NewRedirectionHandler(opt.MaxRedirect)
 	}
+	// Concurrency
 	if opt.ConcurrentRequests != 0 {
 		geziyor.semGlobal = make(chan struct{}, opt.ConcurrentRequests)
 	}
@@ -80,11 +89,13 @@ func NewGeziyor(opt *Options) *Geziyor {
 			hostSems map[string]chan struct{}
 		}{hostSems: make(map[string]chan struct{})}
 	}
+	// Middlewares
+	geziyor.requestMiddlewares = append(geziyor.requestMiddlewares, opt.RequestMiddlewares...)
+	geziyor.responseMiddlewares = append(geziyor.responseMiddlewares, opt.ResponseMiddlewares...)
+	// Logging
 	if opt.LogDisabled {
 		log.SetOutput(ioutil.Discard)
 	}
-	geziyor.requestMiddlewares = append(geziyor.requestMiddlewares, opt.RequestMiddlewares...)
-	geziyor.responseMiddlewares = append(geziyor.responseMiddlewares, opt.ResponseMiddlewares...)
 
 	return geziyor
 }
@@ -191,7 +202,7 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 		}
 	}
 
-	res, err := g.Client.DoRequest(req, g.Opt.MaxBodySize, g.Opt.CharsetDetectDisabled)
+	res, err := g.Client.DoRequest(req)
 	if err != nil {
 		log.Println(err)
 		return

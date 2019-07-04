@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -100,7 +101,7 @@ func TestCharsetFromHeaders(t *testing.T) {
 	defer ts.Close()
 
 	req, _ := NewRequest("GET", ts.URL, nil)
-	res, _ := NewClient().DoRequestClient(req, DefaultMaxBody, false)
+	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes).DoRequestClient(req)
 
 	if string(res.Body) != "Gültekin" {
 		t.Fatal(string(res.Body))
@@ -115,7 +116,7 @@ func TestCharsetFromBody(t *testing.T) {
 	defer ts.Close()
 
 	req, _ := NewRequest("GET", ts.URL, nil)
-	res, _ := NewClient().DoRequestClient(req, DefaultMaxBody, false)
+	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes).DoRequestClient(req)
 
 	if string(res.Body) != "Gültekin" {
 		t.Fatal(string(res.Body))
@@ -131,9 +132,16 @@ func TestCharsetProvidedWithRequest(t *testing.T) {
 
 	req, _ := NewRequest("GET", ts.URL, nil)
 	req.Encoding = "windows-1254"
-	res, _ := NewClient().DoRequestClient(req, DefaultMaxBody, false)
+	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes).DoRequestClient(req)
 
 	if string(res.Body) != "Gültekin" {
 		t.Fatal(string(res.Body))
 	}
+}
+
+func TestRetry(t *testing.T) {
+	req, _ := NewRequest("GET", "https://httpbin.org/status/500", nil)
+	res, err := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes).DoRequestClient(req)
+	assert.Nil(t, res)
+	assert.Error(t, err)
 }

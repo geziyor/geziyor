@@ -26,6 +26,8 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+// ---* REQUEST MIDDLEWARES *---
+
 // recoverMiddleware recovers scraping being crashed.
 // Logs error and stack trace
 func recoverMiddleware(g *Geziyor, r *client.Request) {
@@ -85,6 +87,8 @@ func logMiddleware(g *Geziyor, r *client.Request) {
 func metricsRequestMiddleware(g *Geziyor, r *client.Request) {
 	g.metrics.RequestCounter.With("method", r.Method).Add(1)
 }
+
+// ---* RESPONSE MIDDLEWARES *---
 
 // parseHTMLMiddleware parses response if response is HTML
 func parseHTMLMiddleware(g *Geziyor, r *client.Response) {

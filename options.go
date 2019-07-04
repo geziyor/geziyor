@@ -40,7 +40,8 @@ type Options struct {
 	// Concurrent requests per domain limit
 	ConcurrentRequestsPerDomain int
 
-	// User Agent. Default: "Geziyor 1.0"
+	// User Agent.
+	// Default: "Geziyor 1.0"
 	UserAgent string
 
 	// Request delays
@@ -68,6 +69,16 @@ type Options struct {
 
 	// Charset Detection disable
 	CharsetDetectDisabled bool
+
+	// Maximum number of times to retry, in addition to the first download.
+	// Set -1 to disable retrying
+	// Default: 2
+	RetryTimes int
+
+	// Which HTTP response codes to retry.
+	// Other errors (DNS lookup issues, connections lost, etc) are always retried.
+	// Default: []int{500, 502, 503, 504, 522, 524, 408}
+	RetryHTTPCodes []int
 
 	// If true, HTML parsing is disabled to improve performance.
 	ParseHTMLDisabled bool

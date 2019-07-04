@@ -21,7 +21,7 @@ type CSV struct {
 func (e *CSV) Export(exports chan interface{}) {
 
 	// Create or append file
-	file, err := os.OpenFile(internal.PreferFirst(e.FileName, "out.csv"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.csv"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Printf("Output file creation error: %v\n", err)
 		return
@@ -29,7 +29,7 @@ func (e *CSV) Export(exports chan interface{}) {
 	defer file.Close()
 
 	writer := csv.NewWriter(file)
-	writer.Comma = internal.PreferFirstRune(e.Comma, ',')
+	writer.Comma = internal.DefaultRune(e.Comma, ',')
 	writer.UseCRLF = e.UseCRLF
 
 	// Export data as responses came

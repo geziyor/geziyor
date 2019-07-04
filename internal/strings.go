@@ -1,19 +1,19 @@
 package internal
 
-// PreferFirst returns first non-empty string
-func PreferFirst(first string, second string) string {
-	if first != "" {
-		return first
+// DefaultString returns first non-empty string
+func DefaultString(val string, valDefault string) string {
+	if val != "" {
+		return val
 	}
-	return second
+	return valDefault
 }
 
-// PreferFirstRune returns first non-empty rune
-func PreferFirstRune(first rune, second rune) rune {
-	if first != 0 {
-		return first
+// DefaultRune returns first non-empty rune
+func DefaultRune(val rune, valDefault rune) rune {
+	if val != 0 {
+		return val
 	}
-	return second
+	return valDefault
 }
 
 // Contains checks whether []string Contains string
