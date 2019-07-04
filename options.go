@@ -4,8 +4,8 @@ import (
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/export"
-	"github.com/geziyor/geziyor/extract"
 	"github.com/geziyor/geziyor/metrics"
+	"github.com/geziyor/geziyor/middleware"
 	"time"
 )
 
@@ -23,9 +23,6 @@ type Options struct {
 
 	// ParseFunc is callback of StartURLs response.
 	ParseFunc func(g *Geziyor, r *client.Response)
-
-	// Extractors extracts items from pages
-	Extractors []extract.Extractor
 
 	// Timeout is global request timeout
 	Timeout time.Duration
@@ -56,10 +53,10 @@ type Options struct {
 	Exporters []export.Exporter
 
 	// Called before requests made to manipulate requests
-	RequestMiddlewares []RequestMiddleware
+	RequestMiddlewares []middleware.RequestProcessor
 
 	// Called after response received
-	ResponseMiddlewares []ResponseMiddleware
+	ResponseMiddlewares []middleware.ResponseProcessor
 
 	// Max body reading size in bytes. Default: 1GB
 	MaxBodySize int64

@@ -4,9 +4,12 @@ import (
 	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/metrics"
+	"github.com/geziyor/geziyor/middleware"
 	"io/ioutil"
 	"log"
 	"net/http/cookiejar"
+	"os"
+	"runtime/debug"
 	"sync"
 )
 
@@ -17,8 +20,8 @@ type Geziyor struct {
 	Exports chan interface{}
 
 	metrics             *metrics.Metrics
-	requestMiddlewares  []RequestMiddleware
-	responseMiddlewares []ResponseMiddleware
+	requestMiddlewares  []middleware.RequestProcessor
+	responseMiddlewares []middleware.ResponseProcessor
 	wgRequests          sync.WaitGroup
 	wgExporters         sync.WaitGroup
 	semGlobal           chan struct{}
@@ -26,7 +29,6 @@ type Geziyor struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
-	visitedURLs sync.Map
 }
 
 // NewGeziyor creates new Geziyor with default values.
@@ -35,21 +37,22 @@ func NewGeziyor(opt *Options) *Geziyor {
 	geziyor := &Geziyor{
 		Opt:     opt,
 		Exports: make(chan interface{}, 1),
-		requestMiddlewares: []RequestMiddleware{
-			allowedDomainsMiddleware,
-			duplicateRequestsMiddleware,
-			defaultHeadersMiddleware,
-			delayMiddleware,
-			logMiddleware,
-			metricsRequestMiddleware,
+		requestMiddlewares: []middleware.RequestProcessor{
+			&middleware.AllowedDomains{AllowedDomains: opt.AllowedDomains},
+			&middleware.DuplicateRequests{RevisitEnabled: opt.URLRevisitEnabled},
+			&middleware.Headers{UserAgent: opt.UserAgent},
+			middleware.NewDelay(opt.RequestDelayRandomize, opt.RequestDelay),
 		},
-		responseMiddlewares: []ResponseMiddleware{
-			parseHTMLMiddleware,
-			metricsResponseMiddleware,
-			extractorsMiddleware,
+		responseMiddlewares: []middleware.ResponseProcessor{
+			&middleware.ParseHTML{ParseHTMLDisabled: opt.ParseHTMLDisabled},
+			&middleware.LogStats{LogDisabled: opt.LogDisabled},
 		},
 		metrics: metrics.NewMetrics(opt.MetricsType),
 	}
+
+	metricsMiddleware := &middleware.Metrics{Metrics: geziyor.metrics}
+	geziyor.requestMiddlewares = append(geziyor.requestMiddlewares, metricsMiddleware)
+	geziyor.responseMiddlewares = append(geziyor.responseMiddlewares, metricsMiddleware)
 
 	// Default
 	if opt.UserAgent == "" {
@@ -95,6 +98,8 @@ func NewGeziyor(opt *Options) *Geziyor {
 	// Logging
 	if opt.LogDisabled {
 		log.SetOutput(ioutil.Discard)
+	} else {
+		log.SetOutput(os.Stdout)
 	}
 
 	return geziyor
@@ -193,10 +198,10 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	if !req.Synchronized {
 		defer g.wgRequests.Done()
 	}
-	defer recoverMiddleware(g, req)
+	defer g.recoverMe()
 
 	for _, middlewareFunc := range g.requestMiddlewares {
-		middlewareFunc(g, req)
+		middlewareFunc.ProcessRequest(req)
 		if req.Cancelled {
 			return
 		}
@@ -209,7 +214,7 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	}
 
 	for _, middlewareFunc := range g.responseMiddlewares {
-		middlewareFunc(g, res)
+		middlewareFunc.ProcessResponse(res)
 	}
 
 	// Callbacks
@@ -246,5 +251,14 @@ func (g *Geziyor) releaseSem(req *client.Request) {
 	}
 	if g.Opt.ConcurrentRequestsPerDomain != 0 {
 		<-g.semHosts.hostSems[req.Host]
+	}
+}
+
+// recoverMe prevents scraping being crashed.
+// Logs error and stack trace
+func (g *Geziyor) recoverMe() {
+	if r := recover(); r != nil {
+		log.Println(r, string(debug.Stack()))
+		g.metrics.PanicCounter.Add(1)
 	}
 }

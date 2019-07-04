@@ -1,7 +1,7 @@
-package geziyor
+package middleware
 
 import (
-	"fmt"
+	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
 	"time"
@@ -13,5 +13,7 @@ func TestRandomDelay(t *testing.T) {
 	min := float64(delay) * 0.5
 	max := float64(delay) * 1.5
 	randomDelay := rand.Intn(int(max-min)) + int(min)
-	fmt.Println(time.Duration(randomDelay))
+
+	assert.True(t, time.Duration(randomDelay).Seconds() < 1.5)
+	assert.True(t, time.Duration(randomDelay).Seconds() > 0.5)
 }

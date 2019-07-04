@@ -104,28 +104,6 @@ geziyor.NewGeziyor(&geziyor.Options{
 
 ### Extracting Data
 
-#### Extractors
-You can add [Extractor](https://godoc.org/github.com/geziyor/geziyor/extractor) to ```[]Extractors``` option to extract structured data. 
-```Exporters``` need to be defined in order extractors to work.
-
-```go
-geziyor.NewGeziyor(&geziyor.Options{
-    StartURLs: []string{"https://www.theverge.com/2019/6/27/18760384/facebook-libra-currency-cryptocurrency-money-transfer-bank-problems-india-china"},
-    Extractors: []extract.Extractor{
-            &extract.HTML{Name: "entry_html", Selector: ".c-entry-hero__content"},
-            &extract.Text{Name: "title", Selector: ".c-page-title"},
-            &extract.OuterHTML{Name: "title_html", Selector: ".c-page-title"},
-            &extract.Text{Name: "author", Selector: ".c-byline__item:nth-child(1) > a"},
-            &extract.Attr{Name: "author_url", Selector: ".c-byline__item:nth-child(1) > a", Attr: "href"},
-            &extract.Text{Name: "summary", Selector: ".c-entry-summary"},
-            &extract.Text{Name: "content", Selector: ".c-entry-content"},
-    },
-    Exporters: []export.Exporter{&export.JSON{}},
-}).Start()
-```    
-
-#### HTML selectors
-
 We can extract HTML elements using ```response.HTMLDoc```. HTMLDoc is Goquery's [Document](https://godoc.org/github.com/PuerkitoBio/goquery#Document).
 
 HTMLDoc can be accessible on Response if response is HTML and can be parsed using Go's built-in HTML [parser](https://godoc.org/golang.org/x/net/html#Parse)
@@ -183,7 +161,6 @@ ok  	github.com/geziyor/geziyor	22.861s
 If you're interested in helping this project, please consider these features:
 
 - Command line tool for: pausing and resuming scraper etc. (like [this](https://docs.scrapy.org/en/latest/topics/commands.html))
-- ~~Automatic item extractors (like [this](https://github.com/andrew-d/goscrape#goscrape))~~
 - Deploying Scrapers to Cloud
 - ~~Automatically exporting extracted data to multiple places (AWS, FTP, DB, JSON, CSV etc)~~ 
 - Downloading media (Images, Videos etc) (like [this](https://docs.scrapy.org/en/latest/topics/media-pipeline.html))
