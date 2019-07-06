@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http/cookiejar"
 	"os"
+	"os/signal"
 	"runtime/debug"
 	"sync"
 )
@@ -29,6 +30,7 @@ type Geziyor struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
+	shutdown bool
 }
 
 // NewGeziyor creates new Geziyor with default values.
@@ -142,17 +144,35 @@ func (g *Geziyor) Start() {
 	}
 
 	// Start Requests
-	if g.Opt.StartRequestsFunc == nil {
+	if g.Opt.StartRequestsFunc != nil {
+		g.Opt.StartRequestsFunc(g)
+	} else {
 		for _, startURL := range g.Opt.StartURLs {
 			g.Get(startURL, g.Opt.ParseFunc)
 		}
-	} else {
-		g.Opt.StartRequestsFunc(g)
 	}
+
+	// Wait for SIGINT (interrupt) signal.
+	shutdownChan := make(chan os.Signal, 1)
+	shutdownDoneChan := make(chan struct{})
+	signal.Notify(shutdownChan, os.Interrupt)
+	go func() {
+		for {
+			select {
+			case <-shutdownChan:
+				log.Println("Received SIGINT, shutting down gracefully. Send again to force")
+				g.shutdown = true
+				signal.Stop(shutdownChan)
+			case <-shutdownDoneChan:
+				return
+			}
+		}
+	}()
 
 	g.wgRequests.Wait()
 	close(g.Exports)
 	g.wgExporters.Wait()
+	shutdownDoneChan <- struct{}{}
 	log.Println("Scraping Finished")
 }
 
@@ -191,6 +211,9 @@ func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *client.Response)
 
 // Do sends an HTTP request
 func (g *Geziyor) Do(req *client.Request, callback func(g *Geziyor, r *client.Response)) {
+	if g.shutdown {
+		return
+	}
 	if req.Synchronized {
 		g.do(req, callback)
 	} else {

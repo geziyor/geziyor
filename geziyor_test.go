@@ -24,7 +24,7 @@ func TestSimple(t *testing.T) {
 	}).Start()
 }
 
-func TestSimpleCache(t *testing.T) {
+func TestCache(t *testing.T) {
 	defer leaktest.Check(t)()
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
