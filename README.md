@@ -9,12 +9,11 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 - 5.000+ Requests/Sec
 - JS Rendering
 - Caching (Memory/Disk)
-- Automatic Data Extracting (CSS Selectors)
 - Automatic Data Exporting (JSON, CSV, or custom)
 - Metrics (Prometheus, Expvar, or custom)
 - Limit Concurrency (Global/Per Domain)
 - Request Delays (Constant/Randomized)
-- Cookies and Middlewares
+- Cookies, Middlewares, robots.txt
 - Automatic response decoding to UTF-8
 
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for all custom settings. 
@@ -63,6 +62,8 @@ See [tests](https://github.com/geziyor/geziyor/blob/master/geziyor_test.go) for 
 ## Documentation
 
 ### Installation
+
+Go 1.12 required
 
     go get github.com/geziyor/geziyor
 
@@ -161,7 +162,6 @@ ok  	github.com/geziyor/geziyor	22.861s
 If you're interested in helping this project, please consider these features:
 
 - Command line tool for: pausing and resuming scraper etc. (like [this](https://docs.scrapy.org/en/latest/topics/commands.html))
-- Deploying Scrapers to Cloud
 - ~~Automatically exporting extracted data to multiple places (AWS, FTP, DB, JSON, CSV etc)~~ 
 - Downloading media (Images, Videos etc) (like [this](https://docs.scrapy.org/en/latest/topics/media-pipeline.html))
 - ~~Realtime metrics (Prometheus etc.)~~

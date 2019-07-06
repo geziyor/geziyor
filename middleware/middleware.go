@@ -4,6 +4,7 @@ import (
 	"github.com/geziyor/geziyor/client"
 )
 
+// RequestResponseProcessor interface is for middlewares that needs to process both requests and responses
 type RequestResponseProcessor interface {
 	RequestProcessor
 	ResponseProcessor

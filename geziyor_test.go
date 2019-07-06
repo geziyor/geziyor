@@ -187,6 +187,16 @@ func TestConcurrentRequests(t *testing.T) {
 	}).Start()
 }
 
+func TestRobots(t *testing.T) {
+	defer leaktest.Check(t)()
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{"https://httpbin.org/deny"},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			t.Error("/deny should be blocked by robots.txt middleware")
+		},
+	}).Start()
+}
+
 // Make sure to increase open file descriptor limits before running
 func BenchmarkRequests(b *testing.B) {
 

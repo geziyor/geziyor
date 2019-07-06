@@ -19,13 +19,13 @@ type Geziyor struct {
 	Client  *client.Client
 	Exports chan interface{}
 
-	metrics             *metrics.Metrics
-	requestMiddlewares  []middleware.RequestProcessor
-	responseMiddlewares []middleware.ResponseProcessor
-	wgRequests          sync.WaitGroup
-	wgExporters         sync.WaitGroup
-	semGlobal           chan struct{}
-	semHosts            struct {
+	metrics        *metrics.Metrics
+	reqMiddlewares []middleware.RequestProcessor
+	resMiddlewares []middleware.ResponseProcessor
+	wgRequests     sync.WaitGroup
+	wgExporters    sync.WaitGroup
+	semGlobal      chan struct{}
+	semHosts       struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
@@ -37,22 +37,18 @@ func NewGeziyor(opt *Options) *Geziyor {
 	geziyor := &Geziyor{
 		Opt:     opt,
 		Exports: make(chan interface{}, 1),
-		requestMiddlewares: []middleware.RequestProcessor{
+		reqMiddlewares: []middleware.RequestProcessor{
 			&middleware.AllowedDomains{AllowedDomains: opt.AllowedDomains},
 			&middleware.DuplicateRequests{RevisitEnabled: opt.URLRevisitEnabled},
 			&middleware.Headers{UserAgent: opt.UserAgent},
 			middleware.NewDelay(opt.RequestDelayRandomize, opt.RequestDelay),
 		},
-		responseMiddlewares: []middleware.ResponseProcessor{
+		resMiddlewares: []middleware.ResponseProcessor{
 			&middleware.ParseHTML{ParseHTMLDisabled: opt.ParseHTMLDisabled},
 			&middleware.LogStats{LogDisabled: opt.LogDisabled},
 		},
 		metrics: metrics.NewMetrics(opt.MetricsType),
 	}
-
-	metricsMiddleware := &middleware.Metrics{Metrics: geziyor.metrics}
-	geziyor.requestMiddlewares = append(geziyor.requestMiddlewares, metricsMiddleware)
-	geziyor.responseMiddlewares = append(geziyor.responseMiddlewares, metricsMiddleware)
 
 	// Default
 	if opt.UserAgent == "" {
@@ -67,6 +63,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 	if len(opt.RetryHTTPCodes) == 0 {
 		opt.RetryHTTPCodes = client.DefaultRetryHTTPCodes
 	}
+
 	// Client
 	geziyor.Client = client.NewClient(opt.MaxBodySize, opt.CharsetDetectDisabled, opt.RetryTimes, opt.RetryHTTPCodes)
 	if opt.Cache != nil {
@@ -82,6 +79,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 	if opt.MaxRedirect != 0 {
 		geziyor.Client.CheckRedirect = client.NewRedirectionHandler(opt.MaxRedirect)
 	}
+
 	// Concurrency
 	if opt.ConcurrentRequests != 0 {
 		geziyor.semGlobal = make(chan struct{}, opt.ConcurrentRequests)
@@ -92,9 +90,19 @@ func NewGeziyor(opt *Options) *Geziyor {
 			hostSems map[string]chan struct{}
 		}{hostSems: make(map[string]chan struct{})}
 	}
-	// Middlewares
-	geziyor.requestMiddlewares = append(geziyor.requestMiddlewares, opt.RequestMiddlewares...)
-	geziyor.responseMiddlewares = append(geziyor.responseMiddlewares, opt.ResponseMiddlewares...)
+
+	// Base Middlewares
+	metricsMiddleware := &middleware.Metrics{Metrics: geziyor.metrics}
+	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, metricsMiddleware)
+	geziyor.resMiddlewares = append(geziyor.resMiddlewares, metricsMiddleware)
+
+	robotsMiddleware := middleware.NewRobotsTxt(geziyor.Client, opt.RobotsTxtDisabled)
+	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, robotsMiddleware)
+
+	// Custom Middlewares
+	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, opt.RequestMiddlewares...)
+	geziyor.resMiddlewares = append(geziyor.resMiddlewares, opt.ResponseMiddlewares...)
+
 	// Logging
 	if opt.LogDisabled {
 		log.SetOutput(ioutil.Discard)
@@ -200,7 +208,7 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	}
 	defer g.recoverMe()
 
-	for _, middlewareFunc := range g.requestMiddlewares {
+	for _, middlewareFunc := range g.reqMiddlewares {
 		middlewareFunc.ProcessRequest(req)
 		if req.Cancelled {
 			return
@@ -213,7 +221,7 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 		return
 	}
 
-	for _, middlewareFunc := range g.responseMiddlewares {
+	for _, middlewareFunc := range g.resMiddlewares {
 		middlewareFunc.ProcessResponse(res)
 	}
 

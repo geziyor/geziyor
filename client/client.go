@@ -74,11 +74,10 @@ func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, re
 
 // DoRequest selects appropriate request handler, client or Chrome
 func (c *Client) DoRequest(req *Request) (*Response, error) {
-	if !req.Rendered {
-		return c.DoRequestClient(req)
-	} else {
+	if req.Rendered {
 		return c.DoRequestChrome(req)
 	}
+	return c.DoRequestClient(req)
 }
 
 // DoRequestClient is a simple wrapper to read response according to options.
