@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fortytw2/leaktest"
-	"github.com/fpfeng/httpcache"
 	"github.com/geziyor/geziyor"
+	"github.com/geziyor/geziyor/cache"
+	"github.com/geziyor/geziyor/cache/diskcache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/export"
 	"github.com/geziyor/geziyor/metrics"
@@ -28,12 +29,13 @@ func TestCache(t *testing.T) {
 	defer leaktest.Check(t)()
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
-		Cache:     httpcache.NewMemoryCache(),
 		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			fmt.Println(string(r.Body))
 			g.Exports <- string(r.Body)
 			g.Get("http://api.ipify.org", nil)
 		},
+		Cache:       diskcache.New(".cache"),
+		CachePolicy: cache.RFC2616,
 	}).Start()
 }
 

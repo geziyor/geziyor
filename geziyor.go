@@ -1,7 +1,7 @@
 package geziyor
 
 import (
-	"github.com/fpfeng/httpcache"
+	"github.com/geziyor/geziyor/cache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/geziyor/geziyor/middleware"
@@ -69,8 +69,12 @@ func NewGeziyor(opt *Options) *Geziyor {
 	// Client
 	geziyor.Client = client.NewClient(opt.MaxBodySize, opt.CharsetDetectDisabled, opt.RetryTimes, opt.RetryHTTPCodes)
 	if opt.Cache != nil {
-		geziyor.Client.Transport = &httpcache.Transport{
-			Transport: geziyor.Client.Transport, Cache: opt.Cache, MarkCachedResponses: true}
+		geziyor.Client.Transport = &cache.Transport{
+			Policy:              opt.CachePolicy,
+			Transport:           geziyor.Client.Transport,
+			Cache:               opt.Cache,
+			MarkCachedResponses: true,
+		}
 	}
 	if opt.Timeout != 0 {
 		geziyor.Client.Timeout = opt.Timeout

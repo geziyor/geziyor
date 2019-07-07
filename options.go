@@ -1,7 +1,7 @@
 package geziyor
 
 import (
-	"github.com/fpfeng/httpcache"
+	"github.com/geziyor/geziyor/cache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/export"
 	"github.com/geziyor/geziyor/metrics"
@@ -15,18 +15,25 @@ type Options struct {
 	// If empty, any domain is allowed
 	AllowedDomains []string
 
-	// Set this to enable caching responses.
-	// Memory Cache: httpcache.NewMemoryCache()
-	// Disk Cache:   diskcache.New(".cache")
-	Cache httpcache.Cache
+	// Cache storage backends.
+	// - Memory
+	// - Disk
+	// - LevelDB
+	Cache cache.Cache
 
-	// Charset Detection disable
+	// Policies for caching.
+	// - Dummy policy (default)
+	// - RFC2616 policy
+	CachePolicy cache.Policy
+
+	// Response charset detection for decoding to UTF-8
 	CharsetDetectDisabled bool
 
 	// Concurrent requests limit
 	ConcurrentRequests int
 
-	// Concurrent requests per domain limit
+	// Concurrent requests per domain limit. Uses request.URL.Host
+	// Subdomains are different than top domain
 	ConcurrentRequestsPerDomain int
 
 	// If set true, cookies won't send.
