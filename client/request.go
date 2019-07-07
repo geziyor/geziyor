@@ -42,5 +42,10 @@ func NewRequest(method, url string, body io.Reader) (*Request, error) {
 		return nil, err
 	}
 
-	return &Request{Request: req}, nil
+	request := Request{
+		Request: req,
+		Meta:    make(map[string]interface{}),
+	}
+
+	return &request, nil
 }

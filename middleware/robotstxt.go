@@ -34,7 +34,6 @@ func (m *RobotsTxt) ProcessRequest(r *client.Request) {
 	m.mut.RUnlock()
 
 	if !exists {
-		// TODO: Disable retry
 		robotsReq, err := client.NewRequest("GET", r.URL.Scheme+"://"+r.Host+"/robots.txt", nil)
 		if err != nil {
 			return // Don't Do anything

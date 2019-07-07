@@ -21,6 +21,7 @@ import (
 var (
 	// ErrNoCookieJar is the error type for missing cookie jar
 	ErrNoCookieJar = errors.New("cookie jar is not available")
+	ErrWrongStatus = errors.New("wrong response status code")
 )
 
 // Client is a small wrapper around *http.Client to provide new methods.
@@ -73,11 +74,36 @@ func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, re
 }
 
 // DoRequest selects appropriate request handler, client or Chrome
-func (c *Client) DoRequest(req *Request) (*Response, error) {
+func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 	if req.Rendered {
-		return c.DoRequestChrome(req)
+		resp, err = c.DoRequestChrome(req)
 	}
-	return c.DoRequestClient(req)
+	resp, err = c.DoRequestClient(req)
+
+	// Retry on Error
+	if err != nil {
+		if req.retryCounter < c.retryTimes {
+			req.retryCounter++
+			log.Println("Retrying:", req.URL.String())
+			return c.DoRequest(req)
+		}
+		return resp, errors.Wrap(err, "Response error")
+	}
+
+	// Retry on http status codes
+	for _, statusCode := range c.retryHTTPCodes {
+		if req.retryCounter < c.retryTimes {
+			if resp.StatusCode == statusCode {
+				req.retryCounter++
+				log.Println("Retrying:", req.URL.String(), resp.StatusCode)
+				return c.DoRequest(req)
+			}
+		} else {
+			return nil, ErrWrongStatus
+		}
+	}
+
+	return
 }
 
 // DoRequestClient is a simple wrapper to read response according to options.
@@ -88,31 +114,14 @@ func (c *Client) DoRequestClient(req *Request) (*Response, error) {
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		// Retry on Error
-		if req.retryCounter < c.retryTimes {
-			req.retryCounter++
-			log.Println("Retrying:", req.URL.String())
-			return c.DoRequestClient(req)
-		}
-		return nil, errors.Wrap(err, "Response error")
-	}
-
-	// Checks status code to retry
-	if req.retryCounter < c.retryTimes {
-		for _, statusCode := range c.retryHTTPCodes {
-			if resp.StatusCode == statusCode {
-				req.retryCounter++
-				log.Println("Retrying:", req.URL.String(), resp.StatusCode)
-				return c.DoRequestClient(req)
-			}
-		}
+		return nil, err
 	}
 
 	// Limit response body reading
 	bodyReader := io.LimitReader(resp.Body, c.maxBodySize)
 
 	// Decode response
-	if resp.Request.Method != "HEAD" {
+	if resp.Request.Method != "HEAD" && resp.ContentLength > 0 {
 		if req.Encoding != "" {
 			if enc, _ := charset.Lookup(req.Encoding); enc != nil {
 				bodyReader = transform.NewReader(bodyReader, enc.NewDecoder())
