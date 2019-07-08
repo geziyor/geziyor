@@ -102,7 +102,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, metricsMiddleware)
 	geziyor.resMiddlewares = append(geziyor.resMiddlewares, metricsMiddleware)
 
-	robotsMiddleware := middleware.NewRobotsTxt(geziyor.Client, opt.RobotsTxtDisabled)
+	robotsMiddleware := middleware.NewRobotsTxt(geziyor.Client, geziyor.metrics, opt.RobotsTxtDisabled)
 	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, robotsMiddleware)
 
 	// Custom Middlewares

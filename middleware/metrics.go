@@ -3,6 +3,7 @@ package middleware
 import (
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/metrics"
+	"strconv"
 )
 
 // Metrics sets stats for request and responses
@@ -15,5 +16,5 @@ func (a *Metrics) ProcessRequest(r *client.Request) {
 }
 
 func (a *Metrics) ProcessResponse(r *client.Response) {
-	a.Metrics.ResponseCounter.With("method", r.Request.Method).Add(1)
+	a.Metrics.ResponseCounter.With("status", strconv.Itoa(r.StatusCode)).Add(1)
 }

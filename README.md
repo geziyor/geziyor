@@ -124,7 +124,7 @@ geziyor.NewGeziyor(&geziyor.Options{
 ### Exporting Data
 
 You can export data automatically using exporters. Just send data to ```Geziyor.Exports``` chan.
-[Available exporters](https://godoc.org/github.com/geziyor/geziyor/exporter)
+[Available exporters](https://godoc.org/github.com/geziyor/geziyor/export)
 
 ```go
 geziyor.NewGeziyor(&geziyor.Options{

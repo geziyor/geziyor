@@ -2,21 +2,25 @@ package middleware
 
 import (
 	"github.com/geziyor/geziyor/client"
+	"github.com/geziyor/geziyor/metrics"
 	"github.com/temoto/robotstxt"
 	"log"
+	"strconv"
 	"sync"
 )
 
 // RobotsTxt middleware filters out requests forbidden by the robots.txt exclusion standard.
 type RobotsTxt struct {
+	metrics        *metrics.Metrics
 	robotsDisabled bool
 	client         *client.Client
 	mut            sync.RWMutex
 	robotsMap      map[string]*robotstxt.RobotsData
 }
 
-func NewRobotsTxt(client *client.Client, robotsDisabled bool) RequestProcessor {
+func NewRobotsTxt(client *client.Client, metrics *metrics.Metrics, robotsDisabled bool) RequestProcessor {
 	return &RobotsTxt{
+		metrics:        metrics,
 		robotsDisabled: robotsDisabled,
 		client:         client,
 		robotsMap:      make(map[string]*robotstxt.RobotsData),
@@ -28,7 +32,7 @@ func (m *RobotsTxt) ProcessRequest(r *client.Request) {
 		return
 	}
 
-	// TODO: Locking like this improves performance but causes duplicate requests to robots.txt,
+	// TODO: Locking like this improves performance but sometimes it causes duplicate requests to robots.txt
 	m.mut.RLock()
 	robotsData, exists := m.robotsMap[r.Host]
 	m.mut.RUnlock()
@@ -39,10 +43,12 @@ func (m *RobotsTxt) ProcessRequest(r *client.Request) {
 			return // Don't Do anything
 		}
 
+		m.metrics.RobotsTxtRequestCounter.Add(1)
 		robotsResp, err := m.client.DoRequestClient(robotsReq)
 		if err != nil {
 			return // Don't Do anything
 		}
+		m.metrics.RobotsTxtResponseCounter.With("status", strconv.Itoa(robotsResp.StatusCode)).Add(1)
 
 		robotsData, err = robotstxt.FromStatusAndBytes(robotsResp.StatusCode, robotsResp.Body)
 		if err != nil {
@@ -55,7 +61,7 @@ func (m *RobotsTxt) ProcessRequest(r *client.Request) {
 	}
 
 	if !robotsData.TestAgent(r.URL.Path, r.UserAgent()) {
-		// TODO: Forbidden requests metrics
+		m.metrics.RobotsTxtForbiddenCounter.With("method", r.Method).Add(1)
 		log.Println("Forbidden by robots.txt:", r.URL.String())
 		r.Cancel()
 	}

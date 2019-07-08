@@ -26,9 +26,12 @@ const (
 
 // Metrics type stores metrics
 type Metrics struct {
-	RequestCounter  metrics.Counter
-	ResponseCounter metrics.Counter
-	PanicCounter    metrics.Counter
+	RequestCounter            metrics.Counter
+	ResponseCounter           metrics.Counter
+	PanicCounter              metrics.Counter
+	RobotsTxtRequestCounter   metrics.Counter
+	RobotsTxtResponseCounter  metrics.Counter
+	RobotsTxtForbiddenCounter metrics.Counter
 }
 
 // NewMetrics creates new metrics with given metrics.Type
@@ -36,15 +39,21 @@ func NewMetrics(metricsType Type) *Metrics {
 	switch metricsType {
 	case Discard:
 		return &Metrics{
-			RequestCounter:  discard.NewCounter(),
-			ResponseCounter: discard.NewCounter(),
-			PanicCounter:    discard.NewCounter(),
+			RequestCounter:            discard.NewCounter(),
+			ResponseCounter:           discard.NewCounter(),
+			PanicCounter:              discard.NewCounter(),
+			RobotsTxtRequestCounter:   discard.NewCounter(),
+			RobotsTxtResponseCounter:  discard.NewCounter(),
+			RobotsTxtForbiddenCounter: discard.NewCounter(),
 		}
 	case ExpVar:
 		return &Metrics{
-			RequestCounter:  expvar.NewCounter("request_count"),
-			ResponseCounter: expvar.NewCounter("response_count"),
-			PanicCounter:    expvar.NewCounter("panic_count"),
+			RequestCounter:            expvar.NewCounter("request_count"),
+			ResponseCounter:           expvar.NewCounter("response_count"),
+			PanicCounter:              expvar.NewCounter("panic_count"),
+			RobotsTxtRequestCounter:   expvar.NewCounter("robotstxt_request_count"),
+			RobotsTxtResponseCounter:  expvar.NewCounter("robotstxt_response_count"),
+			RobotsTxtForbiddenCounter: expvar.NewCounter("robotstxt_forbidden_count"),
 		}
 	case Prometheus:
 		return &Metrics{
@@ -57,12 +66,27 @@ func NewMetrics(metricsType Type) *Metrics {
 				Namespace: "geziyor",
 				Name:      "response_count",
 				Help:      "Response count",
-			}, []string{"method"}),
+			}, []string{"status"}),
 			PanicCounter: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
 				Namespace: "geziyor",
 				Name:      "panic_count",
 				Help:      "Panic count",
 			}, []string{}),
+			RobotsTxtRequestCounter: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+				Namespace: "geziyor",
+				Name:      "robotstxt_request_count",
+				Help:      "Robotstxt request count",
+			}, []string{}),
+			RobotsTxtResponseCounter: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+				Namespace: "geziyor",
+				Name:      "robotstxt_response_count",
+				Help:      "Robotstxt response count",
+			}, []string{"status"}),
+			RobotsTxtForbiddenCounter: prometheus.NewCounterFrom(stdprometheus.CounterOpts{
+				Namespace: "geziyor",
+				Name:      "robotstxt_forbidden_count",
+				Help:      "Robotstxt forbidden count",
+			}, []string{"method"}),
 		}
 	default:
 		return nil
