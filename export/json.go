@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-// JSON exports response data as JSON streaming file
+// JSONLine exports response data as JSON streaming file
 type JSONLine struct {
 	FileName   string
 	EscapeHTML bool
@@ -43,8 +43,6 @@ func (e *JSONLine) Export(exports chan interface{}) {
 type JSON struct {
 	FileName   string
 	EscapeHTML bool
-	Prefix     string
-	Indent     string
 }
 
 // Export exports response data as JSON
@@ -62,7 +60,7 @@ func (e *JSON) Export(exports chan interface{}) {
 
 	// Export data as responses came
 	for res := range exports {
-		data, err := jsonMarshalLine(res, e.EscapeHTML, e.Prefix, e.Indent)
+		data, err := jsonMarshalLine(res, e.EscapeHTML)
 		if err != nil {
 			log.Printf("JSON encoding error on exporter: %v\n", err)
 			continue
@@ -79,12 +77,11 @@ func (e *JSON) Export(exports chan interface{}) {
 	file.WriteAt([]byte("\n]\n"), stat.Size()-2)
 }
 
-// jsonMarshalLine behaves like json.Marshal but supports escapeHTML and indenting
-func jsonMarshalLine(t interface{}, escapeHTML bool, prefix string, indent string) ([]byte, error) {
+// jsonMarshalLine adds tab and comma around actual data
+func jsonMarshalLine(t interface{}, escapeHTML bool) ([]byte, error) {
 	buffer := &bytes.Buffer{}
 	encoder := json.NewEncoder(buffer)
 	encoder.SetEscapeHTML(escapeHTML)
-	encoder.SetIndent(prefix, indent)
 
 	buffer.Write([]byte("	"))         // Tab char
 	err := encoder.Encode(t)          // Write actual data
