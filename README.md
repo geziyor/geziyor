@@ -21,26 +21,16 @@ See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for 
 ## Status
 The project is in **development phase**. Thus, we highly recommend you to use Geziyor with go modules.
 
-## Examples
-Simple usage 
+## Usage
 
-```go
-geziyor.NewGeziyor(&geziyor.Options{
-    StartURLs: []string{"http://api.ipify.org"},
-    ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
-        fmt.Println(string(r.Body))
-    },
-}).Start()
-```
-
-Advanced usage
+This example extracts all quotes from *quotes.toscrape.com* and exports to JSON file.
 
 ```go
 func main() {
     geziyor.NewGeziyor(&geziyor.Options{
         StartURLs: []string{"http://quotes.toscrape.com/"},
         ParseFunc: quotesParse,
-        Exporters: []export.Exporter{export.JSON{}},
+        Exporters: []export.Exporter{&export.JSON{}},
     }).Start()
 }
 

@@ -1,6 +1,7 @@
 package export
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/geziyor/geziyor/internal"
 	"log"
@@ -8,7 +9,7 @@ import (
 )
 
 // JSON exports response data as JSON streaming file
-type JSON struct {
+type JSONLine struct {
 	FileName   string
 	EscapeHTML bool
 	Prefix     string
@@ -16,7 +17,7 @@ type JSON struct {
 }
 
 // Export exports response data as JSON streaming file
-func (e *JSON) Export(exports chan interface{}) {
+func (e *JSONLine) Export(exports chan interface{}) {
 
 	// Create or append file
 	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -36,4 +37,59 @@ func (e *JSON) Export(exports chan interface{}) {
 			log.Printf("JSON encoding error on exporter: %v\n", err)
 		}
 	}
+}
+
+// JSON exports response data as JSON
+type JSON struct {
+	FileName   string
+	EscapeHTML bool
+	Prefix     string
+	Indent     string
+}
+
+// Export exports response data as JSON
+func (e *JSON) Export(exports chan interface{}) {
+
+	// Create or append file
+	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Printf("Output file creation error: %v\n", err)
+		return
+	}
+	defer file.Close()
+
+	file.Write([]byte("[\n"))
+
+	// Export data as responses came
+	for res := range exports {
+		data, err := jsonMarshalLine(res, e.EscapeHTML, e.Prefix, e.Indent)
+		if err != nil {
+			log.Printf("JSON encoding error on exporter: %v\n", err)
+			continue
+		}
+		file.Write(data)
+	}
+
+	// Override on last comma
+	stat, err := file.Stat()
+	if err != nil {
+		file.Write([]byte("]\n"))
+		return
+	}
+	file.WriteAt([]byte("\n]\n"), stat.Size()-2)
+}
+
+// jsonMarshalLine behaves like json.Marshal but supports escapeHTML and indenting
+func jsonMarshalLine(t interface{}, escapeHTML bool, prefix string, indent string) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(escapeHTML)
+	encoder.SetIndent(prefix, indent)
+
+	buffer.Write([]byte("	"))         // Tab char
+	err := encoder.Encode(t)          // Write actual data
+	buffer.Truncate(buffer.Len() - 1) // Remove last newline char
+	buffer.Write([]byte(",\n"))       // Write comma and newline char
+
+	return buffer.Bytes(), err
 }
