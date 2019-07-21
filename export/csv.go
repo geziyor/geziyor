@@ -44,9 +44,8 @@ func (e *CSV) Export(exports chan interface{}) {
 				values = append(values, fmt.Sprint(val.Index(i)))
 			}
 		case reflect.Map:
-			iter := val.MapRange()
-			for iter.Next() {
-				values = append(values, fmt.Sprint(iter.Value()))
+			for _, key := range val.MapKeys() {
+				values = append(values, fmt.Sprint(val.MapIndex(key)))
 			}
 			sort.Strings(values)
 		}
