@@ -77,8 +77,9 @@ func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, re
 func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 	if req.Rendered {
 		resp, err = c.DoRequestChrome(req)
+	} else {
+		resp, err = c.DoRequestClient(req)
 	}
-	resp, err = c.DoRequestClient(req)
 
 	// Retry on Error
 	if err != nil {
