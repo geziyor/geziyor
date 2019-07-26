@@ -53,9 +53,9 @@ See [tests](https://github.com/geziyor/geziyor/blob/master/geziyor_test.go) for 
 
 ### Installation
 
-Go 1.12 required
+    go get -u github.com/geziyor/geziyor
 
-    go get github.com/geziyor/geziyor
+If you want to make JS rendered requests, make sure you have Chrome installed.
 
 **NOTE**: macOS limits the maximum number of open file descriptors.
 If you want to make concurrent requests over 256, you need to increase limits.
