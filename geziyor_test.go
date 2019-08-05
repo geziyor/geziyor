@@ -1,6 +1,7 @@
 package geziyor_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/fortytw2/leaktest"
@@ -10,6 +11,7 @@ import (
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/export"
 	"github.com/geziyor/geziyor/metrics"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -21,6 +23,19 @@ func TestSimple(t *testing.T) {
 		StartURLs: []string{"http://api.ipify.org"},
 		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			fmt.Println(string(r.Body))
+		},
+	}).Start()
+}
+
+func TestUserAgent(t *testing.T) {
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs: []string{"https://httpbin.org/anything"},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			var data map[string]interface{}
+			err := json.Unmarshal(r.Body, &data)
+
+			assert.NoError(t, err)
+			assert.Equal(t, client.DefaultUserAgent, data["headers"].(map[string]interface{})["User-Agent"])
 		},
 	}).Start()
 }
@@ -71,7 +86,6 @@ func TestAllLinks(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
-	defer leaktest.Check(t)()
 
 	geziyor.NewGeziyor(&geziyor.Options{
 		AllowedDomains: []string{"books.toscrape.com"},
