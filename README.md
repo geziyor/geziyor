@@ -6,8 +6,8 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 [![Code Coverage](https://img.shields.io/codecov/c/github/geziyor/geziyor/master.svg)](https://codecov.io/github/geziyor/geziyor?branch=master)
 
 ## Features
+- **JS Rendering**
 - 5.000+ Requests/Sec
-- JS Rendering
 - Caching (Memory/Disk/LevelDB)
 - Automatic Data Exporting (JSON, CSV, or custom)
 - Metrics (Prometheus, Expvar, or custom)
@@ -19,7 +19,7 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for all custom settings. 
 
 ## Status
-The project is in **development phase**. Thus, we highly recommend you to use Geziyor with go modules.
+The project is in **beta** phase. Thus, we highly recommend you to use Geziyor with go modules.
 
 ## Usage
 
@@ -61,7 +61,7 @@ If you want to make JS rendered requests, make sure you have Chrome installed.
 If you want to make concurrent requests over 256, you need to increase limits.
 Read [this](https://wilsonmar.github.io/maximum-limits/) for more.
 
-### Making Requests
+### Making Normal Requests
 
 Initial requests start with ```StartURLs []string``` field in ```Options```. 
 Geziyor makes concurrent requests to those URLs.
@@ -84,12 +84,28 @@ You can make requests using ```Geziyor``` [methods](https://godoc.org/github.com
 geziyor.NewGeziyor(&geziyor.Options{
     StartRequestsFunc: func(g *geziyor.Geziyor) {
     	g.Get("https://httpbin.org/anything", g.Opt.ParseFunc)
-        g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
         g.Head("https://httpbin.org/anything", g.Opt.ParseFunc)
     },
     ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
         fmt.Println(string(r.Body))
     },
+}).Start()
+``` 
+
+### Making JS Rendered Requests
+
+JS Rendered requests can be made using ```GetRendered``` method. 
+By default, geziyor uses local Chrome application CLI to start Chrome browser. Set ```BrowserEndpoint``` option to use different chrome instance. Such as, "ws://localhost:3000"
+
+```go
+geziyor.NewGeziyor(&geziyor.Options{
+    StartRequestsFunc: func(g *geziyor.Geziyor) {
+        g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
+    },
+    ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+        fmt.Println(string(r.Body))
+    },
+    //BrowserEndpoint: "ws://localhost:3000",
 }).Start()
 ``` 
 

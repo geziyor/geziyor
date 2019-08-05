@@ -15,6 +15,11 @@ type Options struct {
 	// If empty, any domain is allowed
 	AllowedDomains []string
 
+	// Chrome headless browser WS endpoint.
+	// If you want to run your own Chrome browser runner, provide its endpoint in here
+	// For example: ws://localhost:3000
+	BrowserEndpoint string
+
 	// Cache storage backends.
 	// - Memory
 	// - Disk

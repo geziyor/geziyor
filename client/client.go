@@ -31,6 +31,7 @@ type Client struct {
 	charsetDetectDisabled bool
 	retryTimes            int
 	retryHTTPCodes        []int
+	remoteAllocatorURL    string
 }
 
 const (
@@ -44,7 +45,7 @@ var (
 )
 
 // NewClient creates http.Client with modified values for typical web scraper
-func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, retryHTTPCodes []int) *Client {
+func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, retryHTTPCodes []int, remoteAllocatorURL string) *Client {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -68,6 +69,7 @@ func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, re
 		charsetDetectDisabled: charsetDetectDisabled,
 		retryTimes:            retryTimes,
 		retryHTTPCodes:        retryHTTPCodes,
+		remoteAllocatorURL:    remoteAllocatorURL,
 	}
 
 	return &client
@@ -156,12 +158,16 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 	var body string
 	var res *network.Response
 
-	ctx, cancel := chromedp.NewContext(context.Background())
+	ctx := context.Background()
+	if c.remoteAllocatorURL != "" {
+		ctx, _ = chromedp.NewRemoteAllocator(ctx, c.remoteAllocatorURL)
+	}
+	ctx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
 
 	if err := chromedp.Run(ctx,
 		network.Enable(),
-		network.SetExtraHTTPHeaders(network.Headers(ConvertHeaderToMap(req.Header))),
+		network.SetExtraHTTPHeaders(ConvertHeaderToMap(req.Header)),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			var reqID network.RequestID
 			chromedp.ListenTarget(ctx, func(ev interface{}) {

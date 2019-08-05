@@ -101,7 +101,7 @@ func TestCharsetFromHeaders(t *testing.T) {
 	defer ts.Close()
 
 	req, _ := NewRequest("GET", ts.URL, nil)
-	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes).DoRequest(req)
+	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes, "").DoRequest(req)
 
 	if string(res.Body) != "Gültekin" {
 		t.Fatal(string(res.Body))
@@ -116,7 +116,7 @@ func TestCharsetFromBody(t *testing.T) {
 	defer ts.Close()
 
 	req, _ := NewRequest("GET", ts.URL, nil)
-	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes).DoRequest(req)
+	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes, "").DoRequest(req)
 
 	if string(res.Body) != "Gültekin" {
 		t.Fatal(string(res.Body))
@@ -132,7 +132,7 @@ func TestCharsetProvidedWithRequest(t *testing.T) {
 
 	req, _ := NewRequest("GET", ts.URL, nil)
 	req.Encoding = "windows-1254"
-	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes).DoRequest(req)
+	res, _ := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes, "").DoRequest(req)
 
 	if string(res.Body) != "Gültekin" {
 		t.Fatal(string(res.Body))
@@ -141,7 +141,7 @@ func TestCharsetProvidedWithRequest(t *testing.T) {
 
 func TestRetry(t *testing.T) {
 	req, _ := NewRequest("GET", "https://httpbin.org/status/500", nil)
-	res, err := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes).DoRequest(req)
+	res, err := NewClient(DefaultMaxBody, false, DefaultRetryTimes, DefaultRetryHTTPCodes, "").DoRequest(req)
 	assert.Nil(t, res)
 	assert.Error(t, err)
 }

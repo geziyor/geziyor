@@ -67,7 +67,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 	}
 
 	// Client
-	geziyor.Client = client.NewClient(opt.MaxBodySize, opt.CharsetDetectDisabled, opt.RetryTimes, opt.RetryHTTPCodes)
+	geziyor.Client = client.NewClient(opt.MaxBodySize, opt.CharsetDetectDisabled, opt.RetryTimes, opt.RetryHTTPCodes, opt.BrowserEndpoint)
 	if opt.Cache != nil {
 		geziyor.Client.Transport = &cache.Transport{
 			Policy:              opt.CachePolicy,

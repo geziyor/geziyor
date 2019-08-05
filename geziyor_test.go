@@ -116,6 +116,20 @@ func TestGetRendered(t *testing.T) {
 	}).Start()
 }
 
+// Run chrome headless instance to test this
+//func TestGetRenderedRemoteAllocator(t *testing.T) {
+//	geziyor.NewGeziyor(&geziyor.Options{
+//		StartRequestsFunc: func(g *geziyor.Geziyor) {
+//			g.GetRendered("https://httpbin.org/anything", g.Opt.ParseFunc)
+//		},
+//		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+//			fmt.Println(string(r.Body))
+//			fmt.Println(r.Request.URL.String(), r.Header)
+//		},
+//		BrowserEndpoint: "ws://localhost:3000",
+//	}).Start()
+//}
+
 func TestHEADRequest(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartRequestsFunc: func(g *geziyor.Geziyor) {
@@ -206,7 +220,7 @@ func BenchmarkRequests(b *testing.B) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Hello, client")
 	}))
-	ts.Client().Transport = client.NewClient(client.DefaultMaxBody, false, client.DefaultRetryTimes, client.DefaultRetryHTTPCodes).Transport
+	ts.Client().Transport = client.NewClient(client.DefaultMaxBody, false, client.DefaultRetryTimes, client.DefaultRetryHTTPCodes, "").Transport
 	defer ts.Close()
 
 	// As we don't benchmark creating a server, reset timer.
