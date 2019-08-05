@@ -36,6 +36,21 @@ type Geziyor struct {
 // NewGeziyor creates new Geziyor with default values.
 // If options provided, options
 func NewGeziyor(opt *Options) *Geziyor {
+
+	// Default Options
+	if opt.UserAgent == "" {
+		opt.UserAgent = client.DefaultUserAgent
+	}
+	if opt.MaxBodySize == 0 {
+		opt.MaxBodySize = client.DefaultMaxBody
+	}
+	if opt.RetryTimes == 0 {
+		opt.RetryTimes = client.DefaultRetryTimes
+	}
+	if len(opt.RetryHTTPCodes) == 0 {
+		opt.RetryHTTPCodes = client.DefaultRetryHTTPCodes
+	}
+
 	geziyor := &Geziyor{
 		Opt:     opt,
 		Exports: make(chan interface{}, 1),
@@ -52,22 +67,14 @@ func NewGeziyor(opt *Options) *Geziyor {
 		metrics: metrics.NewMetrics(opt.MetricsType),
 	}
 
-	// Default
-	if opt.UserAgent == "" {
-		opt.UserAgent = client.DefaultUserAgent
-	}
-	if opt.MaxBodySize == 0 {
-		opt.MaxBodySize = client.DefaultMaxBody
-	}
-	if opt.RetryTimes == 0 {
-		opt.RetryTimes = client.DefaultRetryTimes
-	}
-	if len(opt.RetryHTTPCodes) == 0 {
-		opt.RetryHTTPCodes = client.DefaultRetryHTTPCodes
-	}
-
 	// Client
-	geziyor.Client = client.NewClient(opt.MaxBodySize, opt.CharsetDetectDisabled, opt.RetryTimes, opt.RetryHTTPCodes, opt.BrowserEndpoint)
+	geziyor.Client = client.NewClient(&client.Options{
+		MaxBodySize:           opt.MaxBodySize,
+		CharsetDetectDisabled: opt.CharsetDetectDisabled,
+		RetryTimes:            opt.RetryTimes,
+		RetryHTTPCodes:        opt.RetryHTTPCodes,
+		RemoteAllocatorURL:    opt.BrowserEndpoint,
+	})
 	if opt.Cache != nil {
 		geziyor.Client.Transport = &cache.Transport{
 			Policy:              opt.CachePolicy,

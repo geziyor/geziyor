@@ -27,13 +27,19 @@ var (
 // Client is a small wrapper around *http.Client to provide new methods.
 type Client struct {
 	*http.Client
-	maxBodySize           int64
-	charsetDetectDisabled bool
-	retryTimes            int
-	retryHTTPCodes        []int
-	remoteAllocatorURL    string
+	opt *Options
 }
 
+// Options is custom http.client options
+type Options struct {
+	MaxBodySize           int64
+	CharsetDetectDisabled bool
+	RetryTimes            int
+	RetryHTTPCodes        []int
+	RemoteAllocatorURL    string
+}
+
+// Default values for client
 const (
 	DefaultUserAgent        = "Geziyor 1.0"
 	DefaultMaxBody    int64 = 1024 * 1024 * 1024 // 1GB
@@ -45,7 +51,7 @@ var (
 )
 
 // NewClient creates http.Client with modified values for typical web scraper
-func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, retryHTTPCodes []int, remoteAllocatorURL string) *Client {
+func NewClient(opt *Options) *Client {
 	httpClient := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
@@ -64,15 +70,20 @@ func NewClient(maxBodySize int64, charsetDetectDisabled bool, retryTimes int, re
 	}
 
 	client := Client{
-		Client:                httpClient,
-		maxBodySize:           maxBodySize,
-		charsetDetectDisabled: charsetDetectDisabled,
-		retryTimes:            retryTimes,
-		retryHTTPCodes:        retryHTTPCodes,
-		remoteAllocatorURL:    remoteAllocatorURL,
+		Client: httpClient,
+		opt:    opt,
 	}
 
 	return &client
+}
+
+// newClientDefault creates new client with default options
+func newClientDefault() *Client {
+	return NewClient(&Options{
+		MaxBodySize:    DefaultMaxBody,
+		RetryTimes:     DefaultRetryTimes,
+		RetryHTTPCodes: DefaultRetryHTTPCodes,
+	})
 }
 
 // DoRequest selects appropriate request handler, client or Chrome
@@ -85,7 +96,7 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 
 	// Retry on Error
 	if err != nil {
-		if req.retryCounter < c.retryTimes {
+		if req.retryCounter < c.opt.RetryTimes {
 			req.retryCounter++
 			log.Println("Retrying:", req.URL.String())
 			return c.DoRequest(req)
@@ -94,8 +105,8 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 	}
 
 	// Retry on http status codes
-	for _, statusCode := range c.retryHTTPCodes {
-		if req.retryCounter < c.retryTimes {
+	for _, statusCode := range c.opt.RetryHTTPCodes {
+		if req.retryCounter < c.opt.RetryTimes {
 			if resp.StatusCode == statusCode {
 				req.retryCounter++
 				log.Println("Retrying:", req.URL.String(), resp.StatusCode)
@@ -121,7 +132,7 @@ func (c *Client) DoRequestClient(req *Request) (*Response, error) {
 	}
 
 	// Limit response body reading
-	bodyReader := io.LimitReader(resp.Body, c.maxBodySize)
+	bodyReader := io.LimitReader(resp.Body, c.opt.MaxBodySize)
 
 	// Decode response
 	if resp.Request.Method != "HEAD" && resp.ContentLength > 0 {
@@ -130,7 +141,7 @@ func (c *Client) DoRequestClient(req *Request) (*Response, error) {
 				bodyReader = transform.NewReader(bodyReader, enc.NewDecoder())
 			}
 		} else {
-			if !c.charsetDetectDisabled {
+			if !c.opt.CharsetDetectDisabled {
 				bodyReader, err = charset.NewReader(bodyReader, req.Header.Get("Content-Type"))
 				if err != nil {
 					return nil, errors.Wrap(err, "Reading determined encoding error")
@@ -159,8 +170,8 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 	var res *network.Response
 
 	ctx := context.Background()
-	if c.remoteAllocatorURL != "" {
-		ctx, _ = chromedp.NewRemoteAllocator(ctx, c.remoteAllocatorURL)
+	if c.opt.RemoteAllocatorURL != "" {
+		ctx, _ = chromedp.NewRemoteAllocator(ctx, c.opt.RemoteAllocatorURL)
 	}
 	ctx, cancel := chromedp.NewContext(ctx)
 	defer cancel()
