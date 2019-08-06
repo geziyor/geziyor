@@ -28,7 +28,7 @@ func (r *Response) JoinURL(relativeURL string) string {
 		return ""
 	}
 
-	joinedURL := r.Response.Request.URL.ResolveReference(parsedRelativeURL)
+	joinedURL := r.Request.URL.ResolveReference(parsedRelativeURL)
 	return joinedURL.String()
 }
 
