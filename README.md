@@ -162,14 +162,3 @@ BenchmarkRequests-8   	  200000	    108710 ns/op
 PASS
 ok  	github.com/geziyor/geziyor	22.861s
 ```
-
-## Roadmap
-
-If you're interested in helping this project, please consider these features:
-
-- Command line tool for: pausing and resuming scraper etc. (like [this](https://docs.scrapy.org/en/latest/topics/commands.html))
-- ~~Automatically exporting extracted data to multiple places (AWS, FTP, DB, JSON, CSV etc)~~ 
-- Downloading media (Images, Videos etc) (like [this](https://docs.scrapy.org/en/latest/topics/media-pipeline.html))
-- ~~Realtime metrics (Prometheus etc.)~~
-
-  

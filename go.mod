@@ -5,8 +5,8 @@ go 1.12
 require (
 	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
-	github.com/chromedp/cdproto v0.0.0-20190712010927-387ddc1113d4
-	github.com/chromedp/chromedp v0.3.1-0.20190714134543-f6a51f2349aa
+	github.com/chromedp/cdproto v0.0.0-20190812224334-39ef923dcb8d
+	github.com/chromedp/chromedp v0.4.1-0.20190910162850-42693d2528b1
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.8.0
 	github.com/google/btree v1.0.0 // indirect
