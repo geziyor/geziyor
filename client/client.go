@@ -2,12 +2,6 @@ package client
 
 import (
 	"context"
-	"github.com/chromedp/cdproto/dom"
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/chromedp"
-	"github.com/pkg/errors"
-	"golang.org/x/net/html/charset"
-	"golang.org/x/text/transform"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,12 +10,27 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/chromedp/cdproto/dom"
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
+	"github.com/pkg/errors"
+	"golang.org/x/net/html/charset"
+	"golang.org/x/text/transform"
 )
 
-var (
+// Error is the errors produced from geziyor client
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
+const (
 	// ErrNoCookieJar is the error type for missing cookie jar
-	ErrNoCookieJar = errors.New("cookie jar is not available")
-	ErrWrongStatus = errors.New("wrong response status code")
+	ErrNoCookieJar Error = "cookie jar is not available"
+	// ErrWrongStatus is the error type for invalid response code
+	ErrWrongStatus Error = "wrong response status code"
 )
 
 // Client is a small wrapper around *http.Client to provide new methods.
