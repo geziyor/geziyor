@@ -7,9 +7,7 @@ import (
 
 func TestResponse_JoinURL(t *testing.T) {
 	req, _ := NewRequest("GET", "https://localhost.com/test/a.html", nil)
-	resp := Response{
-		Response: nil,
-		Request:  req,
-	}
+	resp := Response{Request: req}
+
 	assert.Equal(t, "https://localhost.com/source", resp.JoinURL("/source"))
 }

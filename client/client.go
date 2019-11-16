@@ -169,6 +169,7 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 	var body string
 	var res *network.Response
 
+	// Set remote allocator or use local chrome instance
 	ctx := context.Background()
 	if c.opt.RemoteAllocatorURL != "" {
 		ctx, _ = chromedp.NewRemoteAllocator(ctx, c.opt.RemoteAllocatorURL)
@@ -183,6 +184,7 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 			var reqID network.RequestID
 			chromedp.ListenTarget(ctx, func(ev interface{}) {
 				switch ev.(type) {
+				// Save main request ID to get response of it
 				case *network.EventRequestWillBeSent:
 					reqEvent := ev.(*network.EventRequestWillBeSent)
 					if _, exists := reqEvent.Request.Headers["Referer"]; !exists {
@@ -190,6 +192,7 @@ func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
 							reqID = reqEvent.RequestID
 						}
 					}
+				// Save response using main request ID
 				case *network.EventResponseReceived:
 					if resEvent := ev.(*network.EventResponseReceived); resEvent.RequestID == reqID {
 						res = resEvent.Response
