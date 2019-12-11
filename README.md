@@ -19,7 +19,7 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for all custom settings. 
 
 ## Status
-The project is in **beta** phase. Thus, we highly recommend you to use Geziyor with go modules.
+We highly recommend you to use Geziyor with go modules.
 
 ## Usage
 

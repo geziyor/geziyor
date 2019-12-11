@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/geziyor/geziyor/client"
+	"log"
 )
 
 // ParseHTML parses response if response is HTML
@@ -13,6 +14,11 @@ type ParseHTML struct {
 
 func (p *ParseHTML) ProcessResponse(r *client.Response) {
 	if !p.ParseHTMLDisabled && r.IsHTML() {
-		r.HTMLDoc, _ = goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
+		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		r.HTMLDoc = doc
 	}
 }
