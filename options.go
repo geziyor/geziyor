@@ -44,6 +44,10 @@ type Options struct {
 	// If set true, cookies won't send.
 	CookiesDisabled bool
 
+	// ErrorFunc is callback of errors.
+	// If not defined, all errors will be logged.
+	ErrorFunc func(g *Geziyor, r *client.Request, err error)
+
 	// For extracting data
 	Exporters []export.Exporter
 

@@ -251,7 +251,11 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 
 	res, err := g.Client.DoRequest(req)
 	if err != nil {
-		log.Println(err)
+		if g.Opt.ErrorFunc != nil {
+			g.Opt.ErrorFunc(g, req, err)
+		} else {
+			log.Println(err)
+		}
 		return
 	}
 

@@ -44,7 +44,7 @@ func (m *RobotsTxt) ProcessRequest(r *client.Request) {
 		}
 
 		m.metrics.RobotsTxtRequestCounter.Add(1)
-		robotsResp, err := m.client.DoRequestClient(robotsReq)
+		robotsResp, err := m.client.DoRequest(robotsReq)
 		if err != nil {
 			return // Don't Do anything
 		}

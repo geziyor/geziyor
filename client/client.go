@@ -89,9 +89,9 @@ func newClientDefault() *Client {
 // DoRequest selects appropriate request handler, client or Chrome
 func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 	if req.Rendered {
-		resp, err = c.DoRequestChrome(req)
+		resp, err = c.doRequestChrome(req)
 	} else {
-		resp, err = c.DoRequestClient(req)
+		resp, err = c.doRequestClient(req)
 	}
 
 	// Retry on Error
@@ -120,8 +120,8 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 	return
 }
 
-// DoRequestClient is a simple wrapper to read response according to options.
-func (c *Client) DoRequestClient(req *Request) (*Response, error) {
+// doRequestClient is a simple wrapper to read response according to options.
+func (c *Client) doRequestClient(req *Request) (*Response, error) {
 	// Do request
 	resp, err := c.Do(req.Request)
 	if resp != nil {
@@ -164,8 +164,8 @@ func (c *Client) DoRequestClient(req *Request) (*Response, error) {
 	return &response, nil
 }
 
-// DoRequestChrome opens up a new chrome instance and makes request
-func (c *Client) DoRequestChrome(req *Request) (*Response, error) {
+// doRequestChrome opens up a new chrome instance and makes request
+func (c *Client) doRequestChrome(req *Request) (*Response, error) {
 	var body string
 	var res *network.Response
 
