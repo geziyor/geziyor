@@ -1,12 +1,12 @@
 module github.com/geziyor/geziyor
 
-go 1.12
+go 1.15
 
 require (
 	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
-	github.com/chromedp/cdproto v0.0.0-20191114225735-6626966fbae4
-	github.com/chromedp/chromedp v0.5.2-0.20191114231622-97580065bae3
+	github.com/chromedp/cdproto v0.0.0-20200709115526-d1f6fc58448b
+	github.com/chromedp/chromedp v0.5.4-0.20200827070026-4382e54a76d2
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.8.0
 	github.com/google/btree v1.0.0 // indirect

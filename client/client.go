@@ -170,11 +170,14 @@ func (c *Client) doRequestChrome(req *Request) (*Response, error) {
 	var res *network.Response
 
 	// Set remote allocator or use local chrome instance
-	ctx := context.Background()
+	var ctx context.Context
+	var cancel context.CancelFunc
 	if c.opt.RemoteAllocatorURL != "" {
-		ctx, _ = chromedp.NewRemoteAllocator(ctx, c.opt.RemoteAllocatorURL)
+		ctx, cancel = chromedp.NewRemoteAllocator(ctx, c.opt.RemoteAllocatorURL)
+	} else {
+		ctx, cancel = chromedp.NewExecAllocator(context.Background())
 	}
-	ctx, cancel := chromedp.NewContext(ctx)
+	ctx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
 
 	if err := chromedp.Run(ctx,
