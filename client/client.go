@@ -21,7 +21,6 @@ import (
 var (
 	// ErrNoCookieJar is the error type for missing cookie jar
 	ErrNoCookieJar = errors.New("cookie jar is not available")
-	ErrWrongStatus = errors.New("wrong response status code")
 )
 
 // Client is a small wrapper around *http.Client to provide new methods.
@@ -106,18 +105,16 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 
 	// Retry on http status codes
 	for _, statusCode := range c.opt.RetryHTTPCodes {
-		if req.retryCounter < c.opt.RetryTimes {
-			if resp.StatusCode == statusCode {
+		if resp.StatusCode == statusCode {
+			if req.retryCounter < c.opt.RetryTimes {
 				req.retryCounter++
 				log.Println("Retrying:", req.URL.String(), resp.StatusCode)
 				return c.DoRequest(req)
 			}
-		} else {
-			return nil, ErrWrongStatus
 		}
 	}
 
-	return
+	return resp, err
 }
 
 // doRequestClient is a simple wrapper to read response according to options.
