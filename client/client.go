@@ -36,6 +36,7 @@ type Options struct {
 	RetryTimes            int
 	RetryHTTPCodes        []int
 	RemoteAllocatorURL    string
+	AllocatorOptions      []chromedp.ExecAllocatorOption
 }
 
 // Default values for client
@@ -172,7 +173,7 @@ func (c *Client) doRequestChrome(req *Request) (*Response, error) {
 	if c.opt.RemoteAllocatorURL != "" {
 		ctx, cancel = chromedp.NewRemoteAllocator(ctx, c.opt.RemoteAllocatorURL)
 	} else {
-		ctx, cancel = chromedp.NewExecAllocator(context.Background())
+		ctx, cancel = chromedp.NewExecAllocator(context.Background(), c.opt.AllocatorOptions...)
 	}
 	ctx, cancel = chromedp.NewContext(ctx)
 	defer cancel()
