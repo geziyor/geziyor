@@ -5,11 +5,12 @@ go 1.15
 require (
 	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
-	github.com/chromedp/cdproto v0.0.0-20200709115526-d1f6fc58448b
-	github.com/chromedp/chromedp v0.5.4-0.20200827070026-4382e54a76d2
+	github.com/chromedp/cdproto v0.0.0-20210122124816-7a656c010d57
+	github.com/chromedp/chromedp v0.6.6-0.20210122125837-21bf361c969e
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.8.0
 	github.com/google/btree v1.0.0 // indirect
+	github.com/knq/sysutil v0.0.0-20191005231841-15668db23d08 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0
