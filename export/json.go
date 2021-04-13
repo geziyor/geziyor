@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/geziyor/geziyor/internal"
-	"log"
 	"os"
 )
 
@@ -22,7 +21,7 @@ func (e *JSONLine) Export(exports chan interface{}) {
 	// Create or append file
 	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Printf("Output file creation error: %v\n", err)
+		internal.Logger.Printf("Output file creation error: %v\n", err)
 		return
 	}
 	defer file.Close()
@@ -34,7 +33,7 @@ func (e *JSONLine) Export(exports chan interface{}) {
 	// Export data as responses came
 	for res := range exports {
 		if err := encoder.Encode(res); err != nil {
-			log.Printf("JSON encoding error on exporter: %v\n", err)
+			internal.Logger.Printf("JSON encoding error on exporter: %v\n", err)
 		}
 	}
 }
@@ -51,7 +50,7 @@ func (e *JSON) Export(exports chan interface{}) {
 	// Create or append file
 	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Printf("Output file creation error: %v\n", err)
+		internal.Logger.Printf("Output file creation error: %v\n", err)
 		return
 	}
 	defer file.Close()
@@ -62,7 +61,7 @@ func (e *JSON) Export(exports chan interface{}) {
 	for res := range exports {
 		data, err := jsonMarshalLine(res, e.EscapeHTML)
 		if err != nil {
-			log.Printf("JSON encoding error on exporter: %v\n", err)
+			internal.Logger.Printf("JSON encoding error on exporter: %v\n", err)
 			continue
 		}
 		file.Write(data)

@@ -3,7 +3,6 @@ package middleware
 import (
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/internal"
-	"log"
 	"sync"
 )
 
@@ -16,7 +15,7 @@ type AllowedDomains struct {
 func (a *AllowedDomains) ProcessRequest(r *client.Request) {
 	if len(a.AllowedDomains) != 0 && !internal.Contains(a.AllowedDomains, r.Host) {
 		if _, logged := a.logOnlyOnce.LoadOrStore(r.Host, struct{}{}); !logged {
-			log.Printf("Domain not allowed: %s\n", r.Host)
+			internal.Logger.Printf("Domain not allowed: %s\n", r.Host)
 		}
 		r.Cancel()
 		return

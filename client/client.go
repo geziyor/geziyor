@@ -5,12 +5,12 @@ import (
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	"github.com/geziyor/geziyor/internal"
 	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/transform"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -98,7 +98,7 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 	if err != nil {
 		if req.retryCounter < c.opt.RetryTimes {
 			req.retryCounter++
-			log.Println("Retrying:", req.URL.String())
+			internal.Logger.Println("Retrying:", req.URL.String())
 			return c.DoRequest(req)
 		}
 		return resp, errors.Wrap(err, "Response error")
@@ -109,7 +109,7 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 		if resp.StatusCode == statusCode {
 			if req.retryCounter < c.opt.RetryTimes {
 				req.retryCounter++
-				log.Println("Retrying:", req.URL.String(), resp.StatusCode)
+				internal.Logger.Println("Retrying:", req.URL.String(), resp.StatusCode)
 				return c.DoRequest(req)
 			}
 		}

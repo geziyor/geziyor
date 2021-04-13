@@ -3,10 +3,10 @@ package geziyor
 import (
 	"github.com/geziyor/geziyor/cache"
 	"github.com/geziyor/geziyor/client"
+	"github.com/geziyor/geziyor/internal"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/geziyor/geziyor/middleware"
 	"io/ioutil"
-	"log"
 	"net/http/cookiejar"
 	"os"
 	"os/signal"
@@ -118,9 +118,9 @@ func NewGeziyor(opt *Options) *Geziyor {
 
 	// Logging
 	if opt.LogDisabled {
-		log.SetOutput(ioutil.Discard)
+		internal.Logger.SetOutput(ioutil.Discard)
 	} else {
-		log.SetOutput(os.Stdout)
+		internal.Logger.SetOutput(os.Stdout)
 	}
 
 	return geziyor
@@ -128,7 +128,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 
 // Start starts scraping
 func (g *Geziyor) Start() {
-	log.Println("Scraping Started")
+	internal.Logger.Println("Scraping Started")
 
 	// Metrics
 	if g.Opt.MetricsType == metrics.Prometheus || g.Opt.MetricsType == metrics.ExpVar {
@@ -171,7 +171,7 @@ func (g *Geziyor) Start() {
 		for {
 			select {
 			case <-shutdownChan:
-				log.Println("Received SIGINT, shutting down gracefully. Send again to force")
+				internal.Logger.Println("Received SIGINT, shutting down gracefully. Send again to force")
 				g.shutdown = true
 				signal.Stop(shutdownChan)
 			case <-shutdownDoneChan:
@@ -184,14 +184,14 @@ func (g *Geziyor) Start() {
 	close(g.Exports)
 	g.wgExporters.Wait()
 	shutdownDoneChan <- struct{}{}
-	log.Println("Scraping Finished")
+	internal.Logger.Println("Scraping Finished")
 }
 
 // Get issues a GET to the specified URL.
 func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *client.Response)) {
 	req, err := client.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Printf("Request creating error %v\n", err)
+		internal.Logger.Printf("Request creating error %v\n", err)
 		return
 	}
 	g.Do(req, callback)
@@ -203,7 +203,7 @@ func (g *Geziyor) Get(url string, callback func(g *Geziyor, r *client.Response))
 func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *client.Response)) {
 	req, err := client.NewRequest("GET", url, nil)
 	if err != nil {
-		log.Printf("Request creating error %v\n", err)
+		internal.Logger.Printf("Request creating error %v\n", err)
 		return
 	}
 	req.Rendered = true
@@ -214,7 +214,7 @@ func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *client.Re
 func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *client.Response)) {
 	req, err := client.NewRequest("HEAD", url, nil)
 	if err != nil {
-		log.Printf("Request creating error %v\n", err)
+		internal.Logger.Printf("Request creating error %v\n", err)
 		return
 	}
 	g.Do(req, callback)
@@ -254,7 +254,7 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 		if g.Opt.ErrorFunc != nil {
 			g.Opt.ErrorFunc(g, req, err)
 		} else {
-			log.Println(err)
+			internal.Logger.Println(err)
 		}
 		return
 	}
@@ -304,7 +304,7 @@ func (g *Geziyor) releaseSem(req *client.Request) {
 // Logs error and stack trace
 func (g *Geziyor) recoverMe() {
 	if r := recover(); r != nil {
-		log.Println(r, string(debug.Stack()))
+		internal.Logger.Println(r, string(debug.Stack()))
 		g.metrics.PanicCounter.Add(1)
 	}
 }

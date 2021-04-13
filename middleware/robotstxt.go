@@ -2,9 +2,9 @@ package middleware
 
 import (
 	"github.com/geziyor/geziyor/client"
+	"github.com/geziyor/geziyor/internal"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/temoto/robotstxt"
-	"log"
 	"strconv"
 	"sync"
 )
@@ -62,7 +62,7 @@ func (m *RobotsTxt) ProcessRequest(r *client.Request) {
 
 	if !robotsData.TestAgent(r.URL.Path, r.UserAgent()) {
 		m.metrics.RobotsTxtForbiddenCounter.With("method", r.Method).Add(1)
-		log.Println("Forbidden by robots.txt:", r.URL.String())
+		internal.Logger.Println("Forbidden by robots.txt:", r.URL.String())
 		r.Cancel()
 	}
 }

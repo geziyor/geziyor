@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/geziyor/geziyor/internal"
-	"log"
 	"os"
 	"reflect"
 	"sort"
@@ -23,7 +22,7 @@ func (e *CSV) Export(exports chan interface{}) {
 	// Create or append file
 	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.csv"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Printf("Output file creation error: %v\n", err)
+		internal.Logger.Printf("Output file creation error: %v\n", err)
 		return
 	}
 	defer file.Close()
@@ -50,7 +49,7 @@ func (e *CSV) Export(exports chan interface{}) {
 			sort.Strings(values)
 		}
 		if err := writer.Write(values); err != nil {
-			log.Printf("CSV writing error on exporter: %v\n", err)
+			internal.Logger.Printf("CSV writing error on exporter: %v\n", err)
 		}
 	}
 	writer.Flush()
