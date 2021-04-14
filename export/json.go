@@ -3,6 +3,7 @@ package export
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/geziyor/geziyor/internal"
 	"os"
 )
@@ -16,13 +17,12 @@ type JSONLine struct {
 }
 
 // Export exports response data as JSON streaming file
-func (e *JSONLine) Export(exports chan interface{}) {
+func (e *JSONLine) Export(exports chan interface{}) error {
 
 	// Create or append file
 	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		internal.Logger.Printf("Output file creation error: %v\n", err)
-		return
+		return fmt.Errorf("output file creation error: %w", err)
 	}
 	defer file.Close()
 
@@ -36,6 +36,8 @@ func (e *JSONLine) Export(exports chan interface{}) {
 			internal.Logger.Printf("JSON encoding error on exporter: %v\n", err)
 		}
 	}
+
+	return nil
 }
 
 // JSON exports response data as JSON
@@ -45,17 +47,19 @@ type JSON struct {
 }
 
 // Export exports response data as JSON
-func (e *JSON) Export(exports chan interface{}) {
+func (e *JSON) Export(exports chan interface{}) error {
 
 	// Create or append file
 	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.json"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		internal.Logger.Printf("Output file creation error: %v\n", err)
-		return
+		return fmt.Errorf("output file creation error: %w", err)
 	}
 	defer file.Close()
 
-	file.Write([]byte("[\n"))
+	_, err = file.Write([]byte("[\n"))
+	if err != nil {
+		return fmt.Errorf("file write error: %w", err)
+	}
 
 	// Export data as responses came
 	for res := range exports {
@@ -64,16 +68,18 @@ func (e *JSON) Export(exports chan interface{}) {
 			internal.Logger.Printf("JSON encoding error on exporter: %v\n", err)
 			continue
 		}
-		file.Write(data)
+		_, err = file.Write(data)
+		if err != nil {
+			return fmt.Errorf("file write error: %w", err)
+		}
 	}
 
-	// Override on last comma
-	stat, err := file.Stat()
+	_, err = file.Write([]byte("]\n"))
 	if err != nil {
-		file.Write([]byte("]\n"))
-		return
+		return fmt.Errorf("file write error: %w", err)
 	}
-	file.WriteAt([]byte("\n]\n"), stat.Size()-2)
+
+	return nil
 }
 
 // jsonMarshalLine adds tab and comma around actual data

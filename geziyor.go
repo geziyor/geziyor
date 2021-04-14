@@ -3,6 +3,7 @@ package geziyor
 import (
 	"github.com/geziyor/geziyor/cache"
 	"github.com/geziyor/geziyor/client"
+	"github.com/geziyor/geziyor/export"
 	"github.com/geziyor/geziyor/internal"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/geziyor/geziyor/middleware"
@@ -139,11 +140,13 @@ func (g *Geziyor) Start() {
 	// Start Exporters
 	if len(g.Opt.Exporters) != 0 {
 		g.wgExporters.Add(len(g.Opt.Exporters))
-		for _, exp := range g.Opt.Exporters {
-			go func() {
+		for _, exporter := range g.Opt.Exporters {
+			go func(exporter export.Exporter) {
 				defer g.wgExporters.Done()
-				exp.Export(g.Exports)
-			}()
+				if err := exporter.Export(g.Exports); err != nil {
+					internal.Logger.Printf("exporter error: %s\n", err)
+				}
+			}(exporter)
 		}
 	} else {
 		g.wgExporters.Add(1)

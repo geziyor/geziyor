@@ -17,13 +17,12 @@ type CSV struct {
 }
 
 // Export exports response data as CSV streaming file
-func (e *CSV) Export(exports chan interface{}) {
+func (e *CSV) Export(exports chan interface{}) error {
 
 	// Create or append file
 	file, err := os.OpenFile(internal.DefaultString(e.FileName, "out.csv"), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		internal.Logger.Printf("Output file creation error: %v\n", err)
-		return
+		return fmt.Errorf("output file creation error: %w", err)
 	}
 	defer file.Close()
 
@@ -53,4 +52,6 @@ func (e *CSV) Export(exports chan interface{}) {
 		}
 	}
 	writer.Flush()
+
+	return nil
 }
