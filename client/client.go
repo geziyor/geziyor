@@ -105,13 +105,11 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 	}
 
 	// Retry on http status codes
-	for _, statusCode := range c.opt.RetryHTTPCodes {
-		if resp.StatusCode == statusCode {
-			if req.retryCounter < c.opt.RetryTimes {
-				req.retryCounter++
-				internal.Logger.Println("Retrying:", req.URL.String(), resp.StatusCode)
-				return c.DoRequest(req)
-			}
+	if internal.ContainsInt(c.opt.RetryHTTPCodes, resp.StatusCode) {
+		if req.retryCounter < c.opt.RetryTimes {
+			req.retryCounter++
+			internal.Logger.Println("Retrying:", req.URL.String(), resp.StatusCode)
+			return c.DoRequest(req)
 		}
 	}
 

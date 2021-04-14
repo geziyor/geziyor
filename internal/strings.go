@@ -16,8 +16,18 @@ func DefaultRune(val rune, valDefault rune) rune {
 	return valDefault
 }
 
-// Contains checks whether []string Contains string
-func Contains(s []string, e string) bool {
+// ContainsString checks whether []string ContainsString string
+func ContainsString(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+// ContainsInt checks whether []int contains int
+func ContainsInt(s []int, e int) bool {
 	for _, a := range s {
 		if a == e {
 			return true
