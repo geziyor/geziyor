@@ -10,7 +10,6 @@ require (
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.8.0
 	github.com/google/btree v1.0.0 // indirect
-	github.com/knq/sysutil v0.0.0-20191005231841-15668db23d08 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.0.0
@@ -19,4 +18,5 @@ require (
 	github.com/temoto/robotstxt v1.1.1
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
 	golang.org/x/text v0.3.2
+	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 )

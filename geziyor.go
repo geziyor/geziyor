@@ -7,6 +7,7 @@ import (
 	"github.com/geziyor/geziyor/internal"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/geziyor/geziyor/middleware"
+	"golang.org/x/time/rate"
 	"io/ioutil"
 	"net/http/cookiejar"
 	"os"
@@ -24,6 +25,7 @@ type Geziyor struct {
 	metrics        *metrics.Metrics
 	reqMiddlewares []middleware.RequestProcessor
 	resMiddlewares []middleware.ResponseProcessor
+	rateLimiter    *rate.Limiter
 	wgRequests     sync.WaitGroup
 	wgExporters    sync.WaitGroup
 	semGlobal      chan struct{}
@@ -95,6 +97,9 @@ func NewGeziyor(opt *Options) *Geziyor {
 	}
 
 	// Concurrency
+	if opt.RequestsPerSecond != 0 {
+		geziyor.rateLimiter = rate.NewLimiter(rate.Limit(opt.RequestsPerSecond), int(opt.RequestsPerSecond))
+	}
 	if opt.ConcurrentRequests != 0 {
 		geziyor.semGlobal = make(chan struct{}, opt.ConcurrentRequests)
 	}
@@ -277,6 +282,9 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 }
 
 func (g *Geziyor) acquireSem(req *client.Request) {
+	if g.rateLimiter != nil {
+		_ = g.rateLimiter.Wait(req.Context())
+	}
 	if g.Opt.ConcurrentRequests != 0 {
 		g.semGlobal <- struct{}{}
 	}

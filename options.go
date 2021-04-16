@@ -81,6 +81,9 @@ type Options struct {
 	// Called after response received
 	ResponseMiddlewares []middleware.ResponseProcessor
 
+	// RequestsPerSecond limits requests that is made per seconds. Default: No limit
+	RequestsPerSecond float64
+
 	// Which HTTP response codes to retry.
 	// Other errors (DNS lookup issues, connections lost, etc) are always retried.
 	// Default: []int{500, 502, 503, 504, 522, 524, 408}
