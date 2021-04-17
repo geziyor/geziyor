@@ -296,7 +296,10 @@ func (g *Geziyor) releaseSem(req *client.Request) {
 		<-g.semGlobal
 	}
 	if g.Opt.ConcurrentRequestsPerDomain != 0 {
-		<-g.semHosts.hostSems[req.Host]
+		g.semHosts.RLock()
+		hostSem := g.semHosts.hostSems[req.Host]
+		g.semHosts.RUnlock()
+		<-hostSem
 	}
 }
 
