@@ -22,14 +22,14 @@ type Response struct {
 }
 
 // JoinURL joins base response URL and provided relative URL.
-func (r *Response) JoinURL(relativeURL string) string {
+func (r *Response) JoinURL(relativeURL string) (*url.URL, error) {
 	parsedRelativeURL, err := url.Parse(relativeURL)
 	if err != nil {
-		return ""
+		return nil, err
 	}
 
 	joinedURL := r.Request.URL.ResolveReference(parsedRelativeURL)
-	return joinedURL.String()
+	return joinedURL, nil
 }
 
 // IsHTML checks if response content is HTML by looking content-type header

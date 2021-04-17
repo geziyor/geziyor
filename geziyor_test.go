@@ -78,7 +78,8 @@ func quotesParse(g *geziyor.Geziyor, r *client.Response) {
 
 	// Next Page
 	if href, ok := r.HTMLDoc.Find("li.next > a").Attr("href"); ok {
-		g.Get(r.JoinURL(href), quotesParse)
+		absoluteURL, _ := r.JoinURL(href)
+		g.Get(absoluteURL.String(), quotesParse)
 	}
 }
 
@@ -94,7 +95,8 @@ func TestAllLinks(t *testing.T) {
 			g.Exports <- []string{r.Request.URL.String()}
 			r.HTMLDoc.Find("a").Each(func(i int, s *goquery.Selection) {
 				if href, ok := s.Attr("href"); ok {
-					g.Get(r.JoinURL(href), g.Opt.ParseFunc)
+					absoluteURL, _ := r.JoinURL(href)
+					g.Get(absoluteURL.String(), g.Opt.ParseFunc)
 				}
 			})
 		},
@@ -269,7 +271,8 @@ func BenchmarkWhole(b *testing.B) {
 				g.Exports <- []string{r.Request.URL.String()}
 				r.HTMLDoc.Find("a").Each(func(i int, s *goquery.Selection) {
 					if href, ok := s.Attr("href"); ok {
-						g.Get(r.JoinURL(href), g.Opt.ParseFunc)
+						absoluteURL, _ := r.JoinURL(href)
+						g.Get(absoluteURL.String(), g.Opt.ParseFunc)
 					}
 				})
 			},
