@@ -162,6 +162,12 @@ func (g *Geziyor) Start() {
 		}()
 	}
 
+	// Wait for SIGINT (interrupt) signal.
+	shutdownChan := make(chan os.Signal, 1)
+	shutdownDoneChan := make(chan struct{})
+	signal.Notify(shutdownChan, os.Interrupt)
+	go g.interruptSignalWaiter(shutdownChan, shutdownDoneChan)
+
 	// Start Requests
 	if g.Opt.StartRequestsFunc != nil {
 		g.Opt.StartRequestsFunc(g)
@@ -170,23 +176,6 @@ func (g *Geziyor) Start() {
 			g.Get(startURL, g.Opt.ParseFunc)
 		}
 	}
-
-	// Wait for SIGINT (interrupt) signal.
-	shutdownChan := make(chan os.Signal, 1)
-	shutdownDoneChan := make(chan struct{})
-	signal.Notify(shutdownChan, os.Interrupt)
-	go func() {
-		for {
-			select {
-			case <-shutdownChan:
-				internal.Logger.Println("Received SIGINT, shutting down gracefully. Send again to force")
-				g.shutdown = true
-				signal.Stop(shutdownChan)
-			case <-shutdownDoneChan:
-				return
-			}
-		}
-	}()
 
 	g.wgRequests.Wait()
 	close(g.Exports)
@@ -317,5 +306,19 @@ func (g *Geziyor) recoverMe() {
 	if r := recover(); r != nil {
 		internal.Logger.Println(r, string(debug.Stack()))
 		g.metrics.PanicCounter.Add(1)
+	}
+}
+
+// interruptSignalWaiter waits data from provided channels and stops scraper if shutdownChan channel receives SIGINT
+func (g *Geziyor) interruptSignalWaiter(shutdownChan chan os.Signal, shutdownDoneChan chan struct{}) {
+	for {
+		select {
+		case <-shutdownChan:
+			internal.Logger.Println("Received SIGINT, shutting down gracefully. Send again to force")
+			g.shutdown = true
+			signal.Stop(shutdownChan)
+		case <-shutdownDoneChan:
+			return
+		}
 	}
 }
