@@ -2,11 +2,12 @@ package client
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/geziyor/geziyor/internal"
-	"github.com/pkg/errors"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/transform"
 	"io"
@@ -101,7 +102,7 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 			internal.Logger.Println("Retrying:", req.URL.String())
 			return c.DoRequest(req)
 		}
-		return resp, errors.Wrap(err, "Response error")
+		return resp, err
 	}
 
 	// Retry on http status codes
@@ -124,7 +125,7 @@ func (c *Client) doRequestClient(req *Request) (*Response, error) {
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("response: %w", err)
 	}
 
 	// Limit response body reading
@@ -138,9 +139,10 @@ func (c *Client) doRequestClient(req *Request) (*Response, error) {
 			}
 		} else {
 			if !c.opt.CharsetDetectDisabled {
-				bodyReader, err = charset.NewReader(bodyReader, req.Header.Get("Content-Type"))
+				contentType := req.Header.Get("Content-Type")
+				bodyReader, err = charset.NewReader(bodyReader, contentType)
 				if err != nil {
-					return nil, errors.Wrap(err, "Reading determined encoding error")
+					return nil, fmt.Errorf("charset detection error on content-type %s: %w", contentType, err)
 				}
 			}
 		}
@@ -148,7 +150,7 @@ func (c *Client) doRequestClient(req *Request) (*Response, error) {
 
 	body, err := ioutil.ReadAll(bodyReader)
 	if err != nil {
-		return nil, errors.Wrap(err, "Reading body error")
+		return nil, fmt.Errorf("reading body: %w", err)
 	}
 
 	response := Response{
@@ -211,7 +213,7 @@ func (c *Client) doRequestChrome(req *Request) (*Response, error) {
 			return err
 		}),
 	); err != nil {
-		return nil, errors.Wrap(err, "Request getting rendered error")
+		return nil, fmt.Errorf("request getting rendered: %w", err)
 	}
 
 	// Update changed data
@@ -289,7 +291,7 @@ func ConvertMapToHeader(m map[string]interface{}) http.Header {
 func NewRedirectionHandler(maxRedirect int) func(req *http.Request, via []*http.Request) error {
 	return func(req *http.Request, via []*http.Request) error {
 		if len(via) >= maxRedirect {
-			return errors.Errorf("stopped after %d redirects", maxRedirect)
+			return fmt.Errorf("stopped after %d redirects", maxRedirect)
 		}
 		return nil
 	}
