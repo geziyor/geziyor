@@ -222,10 +222,10 @@ func (g *Geziyor) Do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	if g.shutdown {
 		return
 	}
+	g.wgRequests.Add(1)
 	if req.Synchronized {
 		g.do(req, callback)
 	} else {
-		g.wgRequests.Add(1)
 		go g.do(req, callback)
 	}
 }
@@ -234,9 +234,7 @@ func (g *Geziyor) Do(req *client.Request, callback func(g *Geziyor, r *client.Re
 func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Response)) {
 	g.acquireSem(req)
 	defer g.releaseSem(req)
-	if !req.Synchronized {
-		defer g.wgRequests.Done()
-	}
+	defer g.wgRequests.Done()
 	defer g.recoverMe()
 
 	for _, middlewareFunc := range g.reqMiddlewares {
