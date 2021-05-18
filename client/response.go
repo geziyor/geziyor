@@ -23,12 +23,10 @@ type Response struct {
 
 // JoinURL joins base response URL and provided relative URL.
 func (r *Response) JoinURL(relativeURL string) (*url.URL, error) {
-	parsedRelativeURL, err := url.Parse(relativeURL)
+	joinedURL, err := r.Request.URL.Parse(relativeURL)
 	if err != nil {
 		return nil, err
 	}
-
-	joinedURL := r.Request.URL.ResolveReference(parsedRelativeURL)
 	return joinedURL, nil
 }
 
