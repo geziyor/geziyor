@@ -1,6 +1,7 @@
 package geziyor
 
 import (
+	"github.com/chromedp/chromedp"
 	"github.com/geziyor/geziyor/cache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/export"
@@ -77,6 +78,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 		RetryTimes:            opt.RetryTimes,
 		RetryHTTPCodes:        opt.RetryHTTPCodes,
 		RemoteAllocatorURL:    opt.BrowserEndpoint,
+		AllocatorOptions:      chromedp.DefaultExecAllocatorOptions[:],
 	})
 	if opt.Cache != nil {
 		geziyor.Client.Transport = &cache.Transport{
