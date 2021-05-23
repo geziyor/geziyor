@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"github.com/chromedp/chromedp"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -144,4 +145,14 @@ func TestRetry(t *testing.T) {
 	res, err := newClientDefault().DoRequest(req)
 	assert.Nil(t, res)
 	assert.Error(t, err)
+}
+
+// newClientDefault creates new client with default options
+func newClientDefault() *Client {
+	return NewClient(&Options{
+		MaxBodySize:      DefaultMaxBody,
+		RetryTimes:       DefaultRetryTimes,
+		RetryHTTPCodes:   DefaultRetryHTTPCodes,
+		AllocatorOptions: chromedp.DefaultExecAllocatorOptions[:],
+	})
 }

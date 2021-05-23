@@ -78,15 +78,6 @@ func NewClient(opt *Options) *Client {
 	return &client
 }
 
-// newClientDefault creates new client with default options
-func newClientDefault() *Client {
-	return NewClient(&Options{
-		MaxBodySize:    DefaultMaxBody,
-		RetryTimes:     DefaultRetryTimes,
-		RetryHTTPCodes: DefaultRetryHTTPCodes,
-	})
-}
-
 // DoRequest selects appropriate request handler, client or Chrome
 func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 	if req.Rendered {
