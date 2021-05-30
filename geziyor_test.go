@@ -229,6 +229,19 @@ func TestRobots(t *testing.T) {
 	}).Start()
 }
 
+func TestPassMetadata(t *testing.T) {
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			req, _ := client.NewRequest("GET", "https://httpbin.org/anything", nil)
+			req.Meta["key"] = "value"
+			g.Do(req, g.Opt.ParseFunc)
+		},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			assert.Equal(t, r.Request.Meta["key"], "value")
+		},
+	}).Start()
+}
+
 // Make sure to increase open file descriptor limits before running
 func BenchmarkRequests(b *testing.B) {
 

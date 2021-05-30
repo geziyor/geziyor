@@ -107,7 +107,7 @@ geziyor.NewGeziyor(&geziyor.Options{
     },
     //BrowserEndpoint: "ws://localhost:3000",
 }).Start()
-``` 
+```
 
 ### Extracting Data
 
@@ -144,6 +144,26 @@ geziyor.NewGeziyor(&geziyor.Options{
         })
     },
     Exporters: []export.Exporter{&export.JSON{}},
+}).Start()
+```
+
+
+### Custom Requests - Passing Metadata To Callbacks
+
+You can create custom requests with ```client.NewRequest```
+
+Use that request on ```geziyor.Do(request, callback)``` 
+
+```go
+geziyor.NewGeziyor(&geziyor.Options{
+    StartRequestsFunc: func(g *geziyor.Geziyor) {
+        req, _ := client.NewRequest("GET", "https://httpbin.org/anything", nil)
+        req.Meta["key"] = "value"
+        g.Do(req, g.Opt.ParseFunc)
+    },
+    ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+        fmt.Println("This is our data from request: ", r.Request.Meta["key"])
+    },
 }).Start()
 ```
 
