@@ -162,7 +162,7 @@ func (c *Client) doRequestChrome(req *Request) (*Response, error) {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	if c.opt.RemoteAllocatorURL != "" {
-		ctx, cancel = chromedp.NewRemoteAllocator(ctx, c.opt.RemoteAllocatorURL)
+		ctx, cancel = chromedp.NewRemoteAllocator(context.Background(), c.opt.RemoteAllocatorURL)
 	} else {
 		ctx, cancel = chromedp.NewExecAllocator(context.Background(), c.opt.AllocatorOptions...)
 	}
