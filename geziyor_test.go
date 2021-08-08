@@ -10,6 +10,7 @@ import (
 	"github.com/geziyor/geziyor/cache/diskcache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/export"
+	"github.com/geziyor/geziyor/internal"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -129,6 +130,27 @@ func TestGetRendered(t *testing.T) {
 			fmt.Println(r.Request.URL.String(), r.Header)
 		},
 		//URLRevisitEnabled: true,
+	}).Start()
+}
+
+func TestGetRenderedCookie(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(r.Header.Get("Cookie")))
+	}))
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			req, err := client.NewRequest("GET", testServer.URL, nil)
+			if err != nil {
+				internal.Logger.Printf("Request creating error %v\n", err)
+				return
+			}
+			req.Header.Set("Cookie", "key=value")
+			req.Rendered = true
+			g.Do(req, g.Opt.ParseFunc)
+		},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			assert.Contains(t, string(r.Body), "key=value")
+		},
 	}).Start()
 }
 
