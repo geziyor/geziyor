@@ -112,4 +112,14 @@ type Options struct {
 	// User Agent.
 	// Default: "Geziyor 1.0"
 	UserAgent string
+
+    ProxyAdress string
+
+    ProxyPort string
+
+    ProxyLogin string
+
+    ProxyPassword string
+
+	RandomSleep bool
 }
