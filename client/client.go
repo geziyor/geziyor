@@ -38,6 +38,7 @@ type Options struct {
 	RetryHTTPCodes        []int
 	RemoteAllocatorURL    string
 	AllocatorOptions      []chromedp.ExecAllocatorOption
+	ProxyFunc             func(*http.Request) (*url.URL, error)
 }
 
 // Default values for client
@@ -53,9 +54,15 @@ var (
 
 // NewClient creates http.Client with modified values for typical web scraper
 func NewClient(opt *Options) *Client {
+	// Default proxy function is http.ProxyFunction
+	var proxyFunction = http.ProxyFromEnvironment
+	if opt.ProxyFunc != nil {
+		proxyFunction = opt.ProxyFunc
+	}
+
 	httpClient := &http.Client{
 		Transport: &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
+			Proxy: proxyFunction,
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,
 				KeepAlive: 30 * time.Second,
