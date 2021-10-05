@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/elazarl/goproxy"
 	"github.com/fortytw2/leaktest"
 	"github.com/geziyor/geziyor"
 	"github.com/geziyor/geziyor/cache"
@@ -260,6 +261,32 @@ func TestPassMetadata(t *testing.T) {
 		},
 		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			assert.Equal(t, r.Request.Meta["key"], "value")
+		},
+	}).Start()
+}
+
+func TestProxy(t *testing.T) {
+	// Setup fake proxy server
+	testHeaderKey := "Geziyor"
+	testHeaderVal := "value"
+	proxy := goproxy.NewProxyHttpServer()
+	proxy.OnRequest().DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		r.Header.Set(testHeaderKey, testHeaderVal)
+		return r, nil
+	})
+	ts := httptest.NewServer(proxy)
+	defer ts.Close()
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartURLs:         []string{"http://httpbin.org/anything"},
+		ProxyFunc:         client.RoundRobinProxy(ts.URL),
+		RobotsTxtDisabled: true,
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			var data map[string]interface{}
+			err := json.Unmarshal(r.Body, &data)
+			assert.NoError(t, err)
+			// Check header set
+			assert.Equal(t, testHeaderVal, data["headers"].(map[string]interface{})[testHeaderKey])
 		},
 	}).Start()
 }

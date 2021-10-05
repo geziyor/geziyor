@@ -6,6 +6,8 @@ import (
 	"github.com/geziyor/geziyor/export"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/geziyor/geziyor/middleware"
+	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -68,6 +70,9 @@ type Options struct {
 
 	// If true, HTML parsing is disabled to improve performance.
 	ParseHTMLDisabled bool
+
+	// ProxyFunc setting proxy for each request
+	ProxyFunc func(*http.Request) (*url.URL, error)
 
 	// Request delays
 	RequestDelay time.Duration

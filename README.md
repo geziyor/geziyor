@@ -15,6 +15,7 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 - Request Delays (Constant/Randomized)
 - Cookies, Middlewares, robots.txt
 - Automatic response decoding to UTF-8
+- Proxy management (Single, Round-Robin, Custom)
 
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for all custom settings. 
 
@@ -164,6 +165,27 @@ geziyor.NewGeziyor(&geziyor.Options{
     ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
         fmt.Println("This is our data from request: ", r.Request.Meta["key"])
     },
+}).Start()
+```
+
+### Proxy - Use proxy per request
+If you want to use proxy for your requests, and you have 1 proxy, you can just set these env values:
+`HTTP_PROXY`
+`HTTPS_PROXY`
+And geziyor will use those proxies.
+
+Also, you can use in-order proxy per request by setting `ProxyFunc` option to `client.RoundRobinProxy` 
+Or any custom proxy selection function that you want. See `client/proxy.go` on how to implement that kind of custom proxy selection function.
+
+Proxies can be HTTP, HTTPS and SOCKS5.
+
+Note: If you use `http` scheme for proxy, It'll be used for http requests and not for https requests.   
+
+```go
+geziyor.NewGeziyor(&geziyor.Options{
+    StartURLs:         []string{"http://httpbin.org/anything"},
+    ParseFunc:         parseFunc,
+    ProxyFunc:         client.RoundRobinProxy("http://some-http-proxy.com", "https://some-https-proxy.com", "socks5://some-socks5-proxy.com"),
 }).Start()
 ```
 
