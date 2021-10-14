@@ -61,7 +61,7 @@ func TestQuotes(t *testing.T) {
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://quotes.toscrape.com/"},
 		ParseFunc: quotesParse,
-		Exporters: []export.Exporter{&export.JSON{}},
+		Exporters: []export.Exporter{&export.JSONLine{FileName: "1.jsonl"}, &export.JSON{FileName: "2.json"}},
 	}).Start()
 }
 

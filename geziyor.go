@@ -146,24 +146,7 @@ func (g *Geziyor) Start() {
 	}
 
 	// Start Exporters
-	if len(g.Opt.Exporters) != 0 {
-		g.wgExporters.Add(len(g.Opt.Exporters))
-		for _, exporter := range g.Opt.Exporters {
-			go func(exporter export.Exporter) {
-				defer g.wgExporters.Done()
-				if err := exporter.Export(g.Exports); err != nil {
-					internal.Logger.Printf("exporter error: %s\n", err)
-				}
-			}(exporter)
-		}
-	} else {
-		g.wgExporters.Add(1)
-		go func() {
-			for range g.Exports {
-			}
-			g.wgExporters.Done()
-		}()
-	}
+	g.startExporters()
 
 	// Wait for SIGINT (interrupt) signal.
 	shutdownChan := make(chan os.Signal, 1)
@@ -324,5 +307,45 @@ func (g *Geziyor) interruptSignalWaiter(shutdownChan chan os.Signal, shutdownDon
 		case <-shutdownDoneChan:
 			return
 		}
+	}
+}
+
+func (g *Geziyor) startExporters() {
+	if len(g.Opt.Exporters) != 0 {
+		var exporterChans []chan interface{}
+
+		g.wgExporters.Add(len(g.Opt.Exporters))
+		for _, exporter := range g.Opt.Exporters {
+			exporterChan := make(chan interface{})
+			exporterChans = append(exporterChans, exporterChan)
+			go func(exporter export.Exporter) {
+				defer g.wgExporters.Done()
+				if err := exporter.Export(exporterChan); err != nil {
+					internal.Logger.Printf("exporter error: %s\n", err)
+				}
+			}(exporter)
+		}
+		go func() {
+			// When exports closed, close the exporter chans.
+			// Exports chan will be closed after all requests are handled.
+			defer func() {
+				for _, exporterChan := range exporterChans {
+					close(exporterChan)
+				}
+			}()
+			// Send incoming data from exports to all of the exporter's chans
+			for data := range g.Exports {
+				for _, exporterChan := range exporterChans {
+					exporterChan <- data
+				}
+			}
+		}()
+	} else {
+		g.wgExporters.Add(1)
+		go func() {
+			for range g.Exports {
+			}
+			g.wgExporters.Done()
+		}()
 	}
 }
