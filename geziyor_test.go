@@ -189,7 +189,7 @@ type PostBody struct {
 	Message  string `json:"message"`
 }
 
-func TestPostJson(t *testing.T) {
+func TestPostJson(_ *testing.T) {
 	postBody := &PostBody{
 		UserName: "Juan Valdez",
 		Message:  "Best coffee in town",
@@ -209,7 +209,7 @@ func TestPostJson(t *testing.T) {
 	}).Start()
 }
 
-func TestPostFormUrlEncoded(t *testing.T) {
+func TestPostFormUrlEncoded(_ *testing.T) {
 	postForm := url.Values{}
 	postForm.Set("user_name", "Juan Valdez")
 	postForm.Set("message", "Enjoy a good coffee!")
