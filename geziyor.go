@@ -9,6 +9,8 @@ import (
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/geziyor/geziyor/middleware"
 	"golang.org/x/time/rate"
+
+	"io"
 	"io/ioutil"
 	"net/http/cookiejar"
 	"os"
@@ -196,6 +198,16 @@ func (g *Geziyor) GetRendered(url string, callback func(g *Geziyor, r *client.Re
 // Head issues a HEAD to the specified URL
 func (g *Geziyor) Head(url string, callback func(g *Geziyor, r *client.Response)) {
 	req, err := client.NewRequest("HEAD", url, nil)
+	if err != nil {
+		internal.Logger.Printf("Request creating error %v\n", err)
+		return
+	}
+	g.Do(req, callback)
+}
+
+// Post issues a POST to the specified URL
+func (g *Geziyor) Post(url string, body io.Reader, callback func(g *Geziyor, r *client.Response)) {
+	req, err := client.NewRequest("POST", url, body)
 	if err != nil {
 		internal.Logger.Printf("Request creating error %v\n", err)
 		return

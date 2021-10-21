@@ -1,8 +1,15 @@
 package geziyor_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strings"
+	"testing"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/elazarl/goproxy"
 	"github.com/fortytw2/leaktest"
@@ -14,9 +21,6 @@ import (
 	"github.com/geziyor/geziyor/internal"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/stretchr/testify/assert"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestSimple(t *testing.T) {
@@ -177,6 +181,52 @@ func TestHEADRequest(t *testing.T) {
 		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
 			fmt.Println(string(r.Body))
 		},
+	}).Start()
+}
+
+type PostBody struct {
+	UserName string `json:"user_name"`
+	Message  string `json:"message"`
+}
+
+func TestPostJson(t *testing.T) {
+	postBody := &PostBody{
+		UserName: "Juan Valdez",
+		Message:  "Best coffee in town",
+	}
+	payloadBuf := new(bytes.Buffer)
+	json.NewEncoder(payloadBuf).Encode(postBody)
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			g.Post("https://reqbin.com/echo/post/json", payloadBuf, g.Opt.ParseFunc)
+		},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			fmt.Println(string(r.Body))
+			g.Exports <- string(r.Body)
+		},
+		Exporters: []export.Exporter{&export.JSON{FileName: "post_json.json"}},
+	}).Start()
+}
+
+func TestPostFormUrlEncoded(t *testing.T) {
+	postForm := url.Values{}
+	postForm.Set("user_name", "Juan Valdez")
+	postForm.Set("message", "Enjoy a good coffee!")
+
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			g.Post("https://reqbin.com/echo/post/form", strings.NewReader(postForm.Encode()), g.Opt.ParseFunc)
+		},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			fmt.Println(string(r.Body))
+			g.Exports <- map[string]interface{}{
+				"host":            r.Request.Host,
+				"h1":              r.HTMLDoc.Find("h1").Text(),
+				"entire_response": string(r.Body),
+			}
+		},
+		Exporters: []export.Exporter{&export.JSON{FileName: "post_form.json"}},
 	}).Start()
 }
 
