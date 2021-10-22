@@ -34,6 +34,10 @@ type Geziyor struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
+	requestsQueue chan struct {
+		*client.Request
+		callback func(g *Geziyor, r *client.Response)
+	}
 	shutdown bool
 }
 
@@ -112,6 +116,11 @@ func NewGeziyor(opt *Options) *Geziyor {
 			hostSems map[string]chan struct{}
 		}{hostSems: make(map[string]chan struct{})}
 	}
+	queueSize := 1000000
+	geziyor.requestsQueue = make(chan struct {
+		*client.Request
+		callback func(g *Geziyor, r *client.Response)
+	}, queueSize)
 
 	// Base Middlewares
 	metricsMiddleware := &middleware.Metrics{Metrics: geziyor.metrics}
@@ -153,6 +162,9 @@ func (g *Geziyor) Start() {
 	shutdownDoneChan := make(chan struct{})
 	signal.Notify(shutdownChan, os.Interrupt)
 	go g.interruptSignalWaiter(shutdownChan, shutdownDoneChan)
+
+	// Start workers
+	go g.startWorkers()
 
 	// Start Requests
 	if g.Opt.StartRequestsFunc != nil {
@@ -212,7 +224,10 @@ func (g *Geziyor) Do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	if req.Synchronized {
 		g.do(req, callback)
 	} else {
-		go g.do(req, callback)
+		g.requestsQueue <- struct {
+			*client.Request
+			callback func(g *Geziyor, r *client.Response)
+		}{Request: req, callback: callback}
 	}
 }
 
@@ -303,7 +318,6 @@ func (g *Geziyor) interruptSignalWaiter(shutdownChan chan os.Signal, shutdownDon
 		case <-shutdownChan:
 			internal.Logger.Println("Received SIGINT, shutting down gracefully. Send again to force")
 			g.shutdown = true
-			signal.Stop(shutdownChan)
 		case <-shutdownDoneChan:
 			return
 		}
@@ -346,6 +360,32 @@ func (g *Geziyor) startExporters() {
 			for range g.Exports {
 			}
 			g.wgExporters.Done()
+		}()
+	}
+}
+
+func (g *Geziyor) startWorkers() {
+	if g.Opt.ConcurrentRequests != 0 {
+		for i := 0; i < g.Opt.ConcurrentRequests; i++ {
+			go func() {
+				for req := range g.requestsQueue {
+					if g.shutdown {
+						g.wgRequests.Done()
+						continue
+					}
+					g.do(req.Request, req.callback)
+				}
+			}()
+		}
+	} else {
+		go func() {
+			for req := range g.requestsQueue {
+				if g.shutdown {
+					g.wgRequests.Done()
+					continue
+				}
+				go g.do(req.Request, req.callback)
+			}
 		}()
 	}
 }
