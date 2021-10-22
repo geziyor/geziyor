@@ -318,6 +318,7 @@ func (g *Geziyor) interruptSignalWaiter(shutdownChan chan os.Signal, shutdownDon
 		case <-shutdownChan:
 			internal.Logger.Println("Received SIGINT, shutting down gracefully. Send again to force")
 			g.shutdown = true
+			signal.Stop(shutdownChan)
 		case <-shutdownDoneChan:
 			return
 		}
