@@ -68,6 +68,7 @@ func NewClient(opt *Options) *Client {
 				KeepAlive: 30 * time.Second,
 				DualStack: true,
 			}).DialContext,
+			ForceAttemptHTTP2:     true,
 			MaxIdleConns:          0,    // Default: 100
 			MaxIdleConnsPerHost:   1000, // Default: 2
 			IdleConnTimeout:       90 * time.Second,
