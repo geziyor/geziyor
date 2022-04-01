@@ -23,14 +23,15 @@ type Geziyor struct {
 	Client  *client.Client
 	Exports chan interface{}
 
-	metrics        *metrics.Metrics
-	reqMiddlewares []middleware.RequestProcessor
-	resMiddlewares []middleware.ResponseProcessor
-	rateLimiter    *rate.Limiter
-	wgRequests     sync.WaitGroup
-	wgExporters    sync.WaitGroup
-	semGlobal      chan struct{}
-	semHosts       struct {
+	metrics         *metrics.Metrics
+	reqMiddlewares  []middleware.RequestProcessor
+	resMiddlewares  []middleware.ResponseProcessor
+	delayMiddleware middleware.RequestProcessor
+	rateLimiter     *rate.Limiter
+	wgRequests      sync.WaitGroup
+	wgExporters     sync.WaitGroup
+	semGlobal       chan struct{}
+	semHosts        struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
@@ -66,8 +67,8 @@ func NewGeziyor(opt *Options) *Geziyor {
 			&middleware.AllowedDomains{AllowedDomains: opt.AllowedDomains},
 			&middleware.DuplicateRequests{RevisitEnabled: opt.URLRevisitEnabled},
 			&middleware.Headers{UserAgent: opt.UserAgent},
-			middleware.NewDelay(opt.RequestDelayRandomize, opt.RequestDelay),
 		},
+		delayMiddleware: middleware.NewDelay(opt.RequestDelayRandomize, opt.RequestDelay),
 		resMiddlewares: []middleware.ResponseProcessor{
 			&middleware.ParseHTML{ParseHTMLDisabled: opt.ParseHTMLDisabled},
 			&middleware.LogStats{LogDisabled: opt.LogDisabled},
@@ -116,7 +117,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 			hostSems map[string]chan struct{}
 		}{hostSems: make(map[string]chan struct{})}
 	}
-	queueSize := 1000000
+	queueSize := 1_000_000
 	geziyor.requestsQueue = make(chan struct {
 		*client.Request
 		callback func(g *Geziyor, r *client.Response)
@@ -221,13 +222,33 @@ func (g *Geziyor) Do(req *client.Request, callback func(g *Geziyor, r *client.Re
 		return
 	}
 	g.wgRequests.Add(1)
+
+	// Request Middleware is handled prior to attempting URL (via g.do) this
+	// avoids us rate limiting a request that will be cancelled and
+	// queuing URLs that will never be executed.
+	for _, middlewareFunc := range g.reqMiddlewares {
+		middlewareFunc.ProcessRequest(req)
+		if req.Cancelled {
+			g.wgRequests.Done()
+			return
+		}
+	}
+
 	if req.Synchronized {
 		g.do(req, callback)
 	} else {
-		g.requestsQueue <- struct {
+		select {
+		case g.requestsQueue <- struct {
 			*client.Request
 			callback func(g *Geziyor, r *client.Response)
-		}{Request: req, callback: callback}
+		}{Request: req, callback: callback}:
+			return
+		// Safety catch to avoid deadlocks if > queue size URLs in queue
+		default:
+			g.wgRequests.Done()
+			internal.Logger.Printf("Queue full discarding URL %s\n", req.URL.String())
+			return
+		}
 	}
 }
 
@@ -238,12 +259,7 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	defer g.wgRequests.Done()
 	defer g.recoverMe()
 
-	for _, middlewareFunc := range g.reqMiddlewares {
-		middlewareFunc.ProcessRequest(req)
-		if req.Cancelled {
-			return
-		}
-	}
+	g.delayMiddleware.ProcessRequest(req)
 
 	res, err := g.Client.DoRequest(req)
 	if err != nil {
