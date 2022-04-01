@@ -4,6 +4,7 @@ import (
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/discard"
 	"github.com/go-kit/kit/metrics/expvar"
+	"github.com/go-kit/kit/metrics/generic"
 	"github.com/go-kit/kit/metrics/prometheus"
 	stdprometheus "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -22,6 +23,9 @@ const (
 
 	// ExpVar uses built-in expvar package
 	ExpVar
+
+	// Generic uses an in-memory counter for metrics
+	Generic
 )
 
 // Metrics type stores metrics
@@ -37,6 +41,15 @@ type Metrics struct {
 // NewMetrics creates new metrics with given metrics.Type
 func NewMetrics(metricsType Type) *Metrics {
 	switch metricsType {
+	case Generic:
+		return &Metrics{
+			RequestCounter:            generic.NewCounter("request_count"),
+			ResponseCounter:           generic.NewCounter("response_count"),
+			PanicCounter:              generic.NewCounter("panic_count"),
+			RobotsTxtRequestCounter:   generic.NewCounter("robotstxt_request_count"),
+			RobotsTxtResponseCounter:  generic.NewCounter("robotstxt_response_count"),
+			RobotsTxtForbiddenCounter: generic.NewCounter("robotstxt_forbidden_count"),
+		}
 	case Discard:
 		return &Metrics{
 			RequestCounter:            discard.NewCounter(),

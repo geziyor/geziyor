@@ -389,7 +389,7 @@ func BenchmarkWhole(b *testing.B) {
 				})
 			},
 			Exporters: []export.Exporter{&export.CSV{}},
-			//MetricsType: metrics.Prometheus,
+			//MetricsType: Metrics.Prometheus,
 			LogDisabled: true,
 		}).Start()
 	}

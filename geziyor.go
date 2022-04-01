@@ -25,7 +25,7 @@ type Geziyor struct {
 	Client  *client.Client
 	Exports chan interface{}
 
-	metrics        *metrics.Metrics
+	Metrics        *metrics.Metrics
 	reqMiddlewares []middleware.RequestProcessor
 	resMiddlewares []middleware.ResponseProcessor
 	rateLimiter    *rate.Limiter
@@ -70,7 +70,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 			&middleware.ParseHTML{ParseHTMLDisabled: opt.ParseHTMLDisabled},
 			&middleware.LogStats{LogDisabled: opt.LogDisabled},
 		},
-		metrics: metrics.NewMetrics(opt.MetricsType),
+		Metrics: metrics.NewMetrics(opt.MetricsType),
 	}
 
 	// Client
@@ -116,11 +116,11 @@ func NewGeziyor(opt *Options) *Geziyor {
 	}
 
 	// Base Middlewares
-	metricsMiddleware := &middleware.Metrics{Metrics: geziyor.metrics}
+	metricsMiddleware := &middleware.Metrics{Metrics: geziyor.Metrics}
 	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, metricsMiddleware)
 	geziyor.resMiddlewares = append(geziyor.resMiddlewares, metricsMiddleware)
 
-	robotsMiddleware := middleware.NewRobotsTxt(geziyor.Client, geziyor.metrics, opt.RobotsTxtDisabled)
+	robotsMiddleware := middleware.NewRobotsTxt(geziyor.Client, geziyor.Metrics, opt.RobotsTxtDisabled)
 	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, robotsMiddleware)
 
 	// Custom Middlewares
@@ -304,7 +304,7 @@ func (g *Geziyor) releaseSem(req *client.Request) {
 func (g *Geziyor) recoverMe() {
 	if r := recover(); r != nil {
 		internal.Logger.Println(r, string(debug.Stack()))
-		g.metrics.PanicCounter.Add(1)
+		g.Metrics.PanicCounter.Add(1)
 	}
 }
 

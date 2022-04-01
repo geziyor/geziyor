@@ -62,7 +62,7 @@ type Options struct {
 	// Maximum redirection time. Default: 10
 	MaxRedirect int
 
-	// Scraper metrics exporting type. See metrics.Type
+	// Scraper Metrics exporting type. See metrics.Type
 	MetricsType metrics.Type
 
 	// ParseFunc is callback of StartURLs response.
