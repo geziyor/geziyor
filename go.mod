@@ -7,7 +7,7 @@ require (
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/chromedp/cdproto v0.0.0-20210713064928-7d28b402946a
 	github.com/chromedp/chromedp v0.7.4
-	github.com/elazarl/goproxy v0.0.0-20210801061803-8e322dfb79c4 // indirect
+	github.com/elazarl/goproxy v0.0.0-20210801061803-8e322dfb79c4
 	github.com/fortytw2/leaktest v1.3.0
 	github.com/go-kit/kit v0.8.0
 	github.com/golang/snappy v0.0.3 // indirect

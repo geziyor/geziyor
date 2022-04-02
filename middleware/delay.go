@@ -23,7 +23,7 @@ func (a *delay) ProcessRequest(r *client.Request) {
 	if a.requestDelayRandomize {
 		min := float64(a.requestDelay) * 0.5
 		max := float64(a.requestDelay) * 1.5
-		time.Sleep(time.Duration(rand.Intn(int(max-min)) + int(min)))
+		time.Sleep(a.requestDelay + time.Duration(rand.Intn(int(max-min))+int(min)))
 	} else {
 		time.Sleep(a.requestDelay)
 	}
