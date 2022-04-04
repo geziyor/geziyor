@@ -46,6 +46,7 @@ const (
 	DefaultUserAgent        = "Geziyor 1.0"
 	DefaultMaxBody    int64 = 1024 * 1024 * 1024 // 1GB
 	DefaultRetryTimes       = 2
+	DefaultQueueSize        = 1_000_000
 )
 
 var (

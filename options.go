@@ -74,11 +74,17 @@ type Options struct {
 	// ProxyFunc setting proxy for each request
 	ProxyFunc func(*http.Request) (*url.URL, error)
 
+	// Max queued requests
+	QueueSize int // Default: 1.000.000
+
 	// Request delays
 	RequestDelay time.Duration
 
 	// RequestDelayRandomize uses random interval between 0.5 * RequestDelay and 1.5 * RequestDelay
 	RequestDelayRandomize bool
+
+	// Called before requests added into the queue
+	RequestPreQueueMiddlewares []middleware.RequestProcessor
 
 	// Called before requests made to manipulate requests
 	RequestMiddlewares []middleware.RequestProcessor

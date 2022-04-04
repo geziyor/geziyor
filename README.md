@@ -16,6 +16,7 @@ Geziyor is a blazing fast web crawling and web scraping framework. It can be use
 - Cookies, Middlewares, robots.txt
 - Automatic response decoding to UTF-8
 - Proxy management (Single, Round-Robin, Custom)
+- Automatic Queue System
 
 See scraper [Options](https://godoc.org/github.com/geziyor/geziyor#Options) for all custom settings. 
 

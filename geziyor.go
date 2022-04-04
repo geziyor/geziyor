@@ -23,15 +23,15 @@ type Geziyor struct {
 	Client  *client.Client
 	Exports chan interface{}
 
-	metrics         *metrics.Metrics
-	reqMiddlewares  []middleware.RequestProcessor
-	resMiddlewares  []middleware.ResponseProcessor
-	delayMiddleware middleware.RequestProcessor
-	rateLimiter     *rate.Limiter
-	wgRequests      sync.WaitGroup
-	wgExporters     sync.WaitGroup
-	semGlobal       chan struct{}
-	semHosts        struct {
+	metrics                *metrics.Metrics
+	reqPreQueueMiddlewares []middleware.RequestProcessor
+	reqMiddlewares         []middleware.RequestProcessor
+	resMiddlewares         []middleware.ResponseProcessor
+	rateLimiter            *rate.Limiter
+	wgRequests             sync.WaitGroup
+	wgExporters            sync.WaitGroup
+	semGlobal              chan struct{}
+	semHosts               struct {
 		sync.RWMutex
 		hostSems map[string]chan struct{}
 	}
@@ -59,16 +59,21 @@ func NewGeziyor(opt *Options) *Geziyor {
 	if len(opt.RetryHTTPCodes) == 0 {
 		opt.RetryHTTPCodes = client.DefaultRetryHTTPCodes
 	}
+	if opt.QueueSize == 0 {
+		opt.QueueSize = client.DefaultQueueSize
+	}
 
 	geziyor := &Geziyor{
 		Opt:     opt,
 		Exports: make(chan interface{}, 1),
-		reqMiddlewares: []middleware.RequestProcessor{
+		reqPreQueueMiddlewares: []middleware.RequestProcessor{
 			&middleware.AllowedDomains{AllowedDomains: opt.AllowedDomains},
 			&middleware.DuplicateRequests{RevisitEnabled: opt.URLRevisitEnabled},
+		},
+		reqMiddlewares: []middleware.RequestProcessor{
+			middleware.NewDelay(opt.RequestDelayRandomize, opt.RequestDelay),
 			&middleware.Headers{UserAgent: opt.UserAgent},
 		},
-		delayMiddleware: middleware.NewDelay(opt.RequestDelayRandomize, opt.RequestDelay),
 		resMiddlewares: []middleware.ResponseProcessor{
 			&middleware.ParseHTML{ParseHTMLDisabled: opt.ParseHTMLDisabled},
 			&middleware.LogStats{LogDisabled: opt.LogDisabled},
@@ -117,21 +122,23 @@ func NewGeziyor(opt *Options) *Geziyor {
 			hostSems map[string]chan struct{}
 		}{hostSems: make(map[string]chan struct{})}
 	}
-	queueSize := 1_000_000
+
+	// Initialize Queue
 	geziyor.requestsQueue = make(chan struct {
 		*client.Request
 		callback func(g *Geziyor, r *client.Response)
-	}, queueSize)
+	}, opt.QueueSize)
 
-	// Base Middlewares
+	// Add Metrics Middleware
 	metricsMiddleware := &middleware.Metrics{Metrics: geziyor.metrics}
 	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, metricsMiddleware)
 	geziyor.resMiddlewares = append(geziyor.resMiddlewares, metricsMiddleware)
-
+	// Add Robots Middleware
 	robotsMiddleware := middleware.NewRobotsTxt(geziyor.Client, geziyor.metrics, opt.RobotsTxtDisabled)
-	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, robotsMiddleware)
+	geziyor.reqPreQueueMiddlewares = append(geziyor.reqPreQueueMiddlewares, robotsMiddleware)
 
-	// Custom Middlewares
+	// Add Custom Middlewares
+	geziyor.reqPreQueueMiddlewares = append(geziyor.reqPreQueueMiddlewares, opt.RequestPreQueueMiddlewares...)
 	geziyor.reqMiddlewares = append(geziyor.reqMiddlewares, opt.RequestMiddlewares...)
 	geziyor.resMiddlewares = append(geziyor.resMiddlewares, opt.ResponseMiddlewares...)
 
@@ -223,10 +230,10 @@ func (g *Geziyor) Do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	}
 	g.wgRequests.Add(1)
 
-	// Request Middleware is handled prior to attempting URL (via g.do) this
+	// Request Pre Queue Middlewares are handled prior to attempting URL (via g.do) this
 	// avoids us rate limiting a request that will be cancelled and
 	// queuing URLs that will never be executed.
-	for _, middlewareFunc := range g.reqMiddlewares {
+	for _, middlewareFunc := range g.reqPreQueueMiddlewares {
 		middlewareFunc.ProcessRequest(req)
 		if req.Cancelled {
 			g.wgRequests.Done()
@@ -246,7 +253,7 @@ func (g *Geziyor) Do(req *client.Request, callback func(g *Geziyor, r *client.Re
 		// Safety catch to avoid deadlocks if > queue size URLs in queue
 		default:
 			g.wgRequests.Done()
-			internal.Logger.Printf("Queue full discarding URL %s\n", req.URL.String())
+			internal.Logger.Printf("Queue full, discarding URL: %s\n", req.URL.String())
 			return
 		}
 	}
@@ -259,7 +266,12 @@ func (g *Geziyor) do(req *client.Request, callback func(g *Geziyor, r *client.Re
 	defer g.wgRequests.Done()
 	defer g.recoverMe()
 
-	g.delayMiddleware.ProcessRequest(req)
+	for _, middlewareFunc := range g.reqMiddlewares {
+		middlewareFunc.ProcessRequest(req)
+		if req.Cancelled {
+			return
+		}
+	}
 
 	res, err := g.Client.DoRequest(req)
 	if err != nil {
