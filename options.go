@@ -1,6 +1,7 @@
 package geziyor
 
 import (
+	"github.com/chromedp/chromedp"
 	"github.com/geziyor/geziyor/cache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/export"
@@ -73,6 +74,11 @@ type Options struct {
 
 	// ProxyFunc setting proxy for each request
 	ProxyFunc func(*http.Request) (*url.URL, error)
+
+	// Rendered requests pre actions. Setting this will override the existing default.
+	// And you'll need to handle all rendered actions, like navigation, waiting, response etc.
+	// If you need to make custom actions in addition to the defaults, use Request.Actions instead of this.
+	PreActions []chromedp.Action
 
 	// Request delays
 	RequestDelay time.Duration

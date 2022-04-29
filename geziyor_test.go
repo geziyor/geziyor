@@ -2,8 +2,11 @@ package geziyor_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/chromedp/cdproto/dom"
+	"github.com/chromedp/chromedp"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -135,6 +138,37 @@ func TestGetRendered(t *testing.T) {
 			fmt.Println(r.Request.URL.String(), r.Header)
 		},
 		//URLRevisitEnabled: true,
+	}).Start()
+}
+
+func TestGetRenderedCustomActions(t *testing.T) {
+	geziyor.NewGeziyor(&geziyor.Options{
+		StartRequestsFunc: func(g *geziyor.Geziyor) {
+			req, _ := client.NewRequest("GET", "https://httpbin.org/anything", nil)
+			req.Rendered = true
+			req.Actions = []chromedp.Action{
+				chromedp.Navigate("https://httpbin.org/anything"),
+				chromedp.WaitReady(":root"),
+				chromedp.ActionFunc(func(ctx context.Context) error {
+					node, err := dom.GetDocument().Do(ctx)
+					if err != nil {
+						return err
+					}
+					body, err := dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
+					fmt.Println("HOLAAA", body)
+					return err
+				}),
+			}
+			g.Do(req, g.Opt.ParseFunc)
+		},
+		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			fmt.Println(string(r.Body))
+			fmt.Println(r.Request.URL.String(), r.Header)
+		},
+		// This will make only visit and nothing more.
+		//PreActions: []chromedp.Action{
+		//	chromedp.Navigate("https://httpbin.org/anything"),
+		//},
 	}).Start()
 }
 

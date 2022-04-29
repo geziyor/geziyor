@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/chromedp/chromedp"
 	"io"
 	"net/http"
 )
@@ -26,6 +27,9 @@ type Request struct {
 
 	// Set this true to cancel requests. Should be used on middlewares.
 	Cancelled bool
+
+	// Chrome actions to be run if the request is Rendered
+	Actions []chromedp.Action
 
 	retryCounter int
 }

@@ -15,7 +15,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 )
 
@@ -39,6 +38,11 @@ type Options struct {
 	RemoteAllocatorURL    string
 	AllocatorOptions      []chromedp.ExecAllocatorOption
 	ProxyFunc             func(*http.Request) (*url.URL, error)
+	// Changing this will override the existing default PreActions for Rendered requests.
+	// Geziyor Response will be nearly empty. Because we have no way to extract response without default pre actions.
+	// So, if you set this, you should handle all navigation, header setting, and response handling yourself.
+	// See defaultPreActions variable for the existing defaults.
+	PreActions []chromedp.Action
 }
 
 // Default values for client
@@ -163,39 +167,31 @@ func (c *Client) doRequestClient(req *Request) (*Response, error) {
 
 // doRequestChrome opens up a new chrome instance and makes request
 func (c *Client) doRequestChrome(req *Request) (*Response, error) {
+	// Set remote allocator or use local chrome instance
+	var allocCtx context.Context
+	var allocCancel context.CancelFunc
+	if c.opt.RemoteAllocatorURL != "" {
+		allocCtx, allocCancel = chromedp.NewRemoteAllocator(context.Background(), c.opt.RemoteAllocatorURL)
+	} else {
+		allocCtx, allocCancel = chromedp.NewExecAllocator(context.Background(), c.opt.AllocatorOptions...)
+	}
+	defer allocCancel()
+
+	// Task context
+	taskCtx, taskCancel := chromedp.NewContext(allocCtx)
+	defer taskCancel()
+
+	// Initiate default pre actions
 	var body string
 	var res *network.Response
-
-	// Set remote allocator or use local chrome instance
-	var ctx context.Context
-	var cancel context.CancelFunc
-	if c.opt.RemoteAllocatorURL != "" {
-		ctx, cancel = chromedp.NewRemoteAllocator(context.Background(), c.opt.RemoteAllocatorURL)
-	} else {
-		ctx, cancel = chromedp.NewExecAllocator(context.Background(), c.opt.AllocatorOptions...)
-	}
-	ctx, cancel = chromedp.NewContext(ctx)
-	defer cancel()
-
-	if err := chromedp.Run(ctx,
+	var defaultPreActions = []chromedp.Action{
 		network.Enable(),
 		network.SetExtraHTTPHeaders(ConvertHeaderToMap(req.Header)),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			var reqID network.RequestID
 			chromedp.ListenTarget(ctx, func(ev interface{}) {
-				switch ev.(type) {
-				// Save main request ID to get response of it
-				case *network.EventRequestWillBeSent:
-					reqEvent := ev.(*network.EventRequestWillBeSent)
-					if _, exists := reqEvent.Request.Headers["Referer"]; !exists {
-						if strings.HasPrefix(reqEvent.Request.URL, "http") {
-							reqID = reqEvent.RequestID
-						}
-					}
-				// Save response using main request ID
-				case *network.EventResponseReceived:
-					if resEvent := ev.(*network.EventResponseReceived); resEvent.RequestID == reqID {
-						res = resEvent.Response
+				if event, ok := ev.(*network.EventResponseReceived); ok {
+					if res == nil && event.Type == "Document" {
+						res = event.Response
 					}
 				}
 			})
@@ -211,23 +207,38 @@ func (c *Client) doRequestChrome(req *Request) (*Response, error) {
 			body, err = dom.GetOuterHTML().WithNodeID(node.NodeID).Do(ctx)
 			return err
 		}),
-	); err != nil {
+	}
+
+	// If options has pre actions, we override the default existing one.
+	if len(c.opt.PreActions) != 0 {
+		defaultPreActions = c.opt.PreActions
+	}
+
+	// Append custom actions to default ones.
+	defaultActions := append(defaultPreActions, req.Actions...)
+
+	// Run all actions
+	if err := chromedp.Run(taskCtx, defaultActions...); err != nil {
 		return nil, fmt.Errorf("request getting rendered: %w", err)
 	}
 
-	// Update changed data
-	req.Header = ConvertMapToHeader(res.RequestHeaders)
-	req.URL, _ = url.Parse(res.URL)
+	httpResponse := &http.Response{
+		Request: req.Request,
+	}
+
+	// If response is set by default pre actions
+	if res != nil {
+		req.Header = ConvertMapToHeader(res.RequestHeaders)
+		req.URL, _ = url.Parse(res.URL)
+		httpResponse.StatusCode = int(res.Status)
+		httpResponse.Proto = res.Protocol
+		httpResponse.Header = ConvertMapToHeader(res.Headers)
+	}
 
 	response := Response{
-		Response: &http.Response{
-			Request:    req.Request,
-			StatusCode: int(res.Status),
-			Proto:      res.Protocol,
-			Header:     ConvertMapToHeader(res.Headers),
-		},
-		Body:    []byte(body),
-		Request: req,
+		Response: httpResponse,
+		Body:     []byte(body),
+		Request:  req,
 	}
 
 	return &response, nil

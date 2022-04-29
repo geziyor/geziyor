@@ -82,6 +82,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 		RemoteAllocatorURL:    opt.BrowserEndpoint,
 		AllocatorOptions:      chromedp.DefaultExecAllocatorOptions[:],
 		ProxyFunc:             opt.ProxyFunc,
+		PreActions:            opt.PreActions,
 	})
 	if opt.Cache != nil {
 		geziyor.Client.Transport = &cache.Transport{
