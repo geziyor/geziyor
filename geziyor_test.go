@@ -246,7 +246,7 @@ func TestPostJson(_ *testing.T) {
 }
 
 func TestPostFormUrlEncoded(_ *testing.T) {
-	postForm := url.Values{}
+	var postForm url.Values
 	postForm.Set("user_name", "Juan Valdez")
 	postForm.Set("message", "Enjoy a good coffee!")
 
