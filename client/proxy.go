@@ -2,13 +2,14 @@ package client
 
 import (
 	"context"
-	"github.com/geziyor/geziyor/internal"
 	"net/http"
 	"net/url"
 	"sync/atomic"
+
+	"github.com/geziyor/geziyor/internal"
 )
 
-const ProxyURLKey = 0
+type ProxyURLKey int
 
 type roundRobinProxy struct {
 	proxyURLs []*url.URL
@@ -20,7 +21,7 @@ func (r *roundRobinProxy) GetProxy(pr *http.Request) (*url.URL, error) {
 	u := r.proxyURLs[index%uint32(len(r.proxyURLs))]
 
 	// Set proxy url to context
-	ctx := context.WithValue(pr.Context(), ProxyURLKey, u.String())
+	ctx := context.WithValue(pr.Context(), ProxyURLKey(0), u.String())
 	*pr = *pr.WithContext(ctx)
 	return u, nil
 }
