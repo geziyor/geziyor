@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/chromedp/cdproto/dom"
-	"github.com/chromedp/chromedp"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/chromedp/cdproto/dom"
+	"github.com/chromedp/chromedp"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/elazarl/goproxy"
@@ -162,6 +163,7 @@ func TestGetRenderedCustomActions(t *testing.T) {
 			g.Do(req, g.Opt.ParseFunc)
 		},
 		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
+			assert.Equal(t, 200, r.StatusCode)
 			fmt.Println(string(r.Body))
 			fmt.Println(r.Request.URL.String(), r.Header)
 		},

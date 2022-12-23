@@ -4,18 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/chromedp/cdproto/dom"
-	"github.com/chromedp/cdproto/network"
-	"github.com/chromedp/chromedp"
-	"github.com/geziyor/geziyor/internal"
-	"golang.org/x/net/html/charset"
-	"golang.org/x/text/transform"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/chromedp/cdproto/dom"
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
+	"github.com/geziyor/geziyor/internal"
+	"golang.org/x/net/html/charset"
+	"golang.org/x/text/transform"
 )
 
 var (
@@ -215,10 +216,10 @@ func (c *Client) doRequestChrome(req *Request) (*Response, error) {
 	}
 
 	// Append custom actions to default ones.
-	defaultActions := append(defaultPreActions, req.Actions...)
+	defaultPreActions = append(defaultPreActions, req.Actions...)
 
 	// Run all actions
-	if err := chromedp.Run(taskCtx, defaultActions...); err != nil {
+	if err := chromedp.Run(taskCtx, defaultPreActions...); err != nil {
 		return nil, fmt.Errorf("request getting rendered: %w", err)
 	}
 
