@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -125,9 +124,11 @@ func (c *Client) DoRequest(req *Request) (resp *Response, err error) {
 func (c *Client) doRequestClient(req *Request) (*Response, error) {
 	// Do request
 	resp, err := c.Do(req.Request)
-	if resp != nil {
-		defer resp.Body.Close()
-	}
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
 	if err != nil {
 		return nil, fmt.Errorf("response: %w", err)
 	}
@@ -152,7 +153,7 @@ func (c *Client) doRequestClient(req *Request) (*Response, error) {
 		}
 	}
 
-	body, err := ioutil.ReadAll(bodyReader)
+	body, err := io.ReadAll(bodyReader)
 	if err != nil {
 		return nil, fmt.Errorf("reading body: %w", err)
 	}
@@ -291,7 +292,7 @@ func ConvertHeaderToMap(header http.Header) map[string]interface{} {
 
 // ConvertMapToHeader converts map[string]interface{} to http.Header
 func ConvertMapToHeader(m map[string]interface{}) http.Header {
-	header := http.Header{}
+	var header http.Header
 	for k, v := range m {
 		header.Set(k, v.(string))
 	}
