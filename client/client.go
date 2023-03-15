@@ -292,7 +292,7 @@ func ConvertHeaderToMap(header http.Header) map[string]interface{} {
 
 // ConvertMapToHeader converts map[string]interface{} to http.Header
 func ConvertMapToHeader(m map[string]interface{}) http.Header {
-	var header http.Header
+	header := http.Header{}
 	for k, v := range m {
 		header.Set(k, v.(string))
 	}
