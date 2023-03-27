@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"flag"
-	"github.com/geziyor/geziyor/cache/memorycache"
+	"github.com/hohner2008/geziyor/cache/memorycache"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -64,7 +64,8 @@ func setup() {
 			return
 		}
 		w.Header().Set("last-modified", lm)
-		if r.Header.Get("range") == "bytes=4-9" {
+		if r.Header.Get("range") == "bytes=4-9"
+ {
 			w.WriteHeader(http.StatusPartialContent)
 			w.Write([]byte(" text "))
 			return
