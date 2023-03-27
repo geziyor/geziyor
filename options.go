@@ -2,11 +2,11 @@ package geziyor
 
 import (
 	"github.com/chromedp/chromedp"
-	"github.com/geziyor/geziyor/cache"
-	"github.com/geziyor/geziyor/client"
-	"github.com/geziyor/geziyor/export"
-	"github.com/geziyor/geziyor/metrics"
-	"github.com/geziyor/geziyor/middleware"
+	"github.com/hohner2008/geziyor/cache"
+	"github.com/hohner2008/geziyor/client"
+	"github.com/hohner2008/geziyor/export"
+	"github.com/hohner2008/geziyor/metrics"
+	"github.com/hohner2008/geziyor/middleware"
 	"net/http"
 	"net/url"
 	"time"
@@ -95,6 +95,7 @@ type Options struct {
 	// RequestsPerSecond limits requests that is made per seconds. Default: No limit
 	RequestsPerSecond float64
 
+
 	// Which HTTP response codes to retry.
 	// Other errors (DNS lookup issues, connections lost, etc) are always retried.
 	// Default: []int{500, 502, 503, 504, 522, 524, 408}
@@ -103,6 +104,7 @@ type Options struct {
 	// Maximum number of times to retry, in addition to the first download.
 	// Set -1 to disable retrying
 	// Default: 2
+
 	RetryTimes int
 
 	// If true, disable robots.txt checks
