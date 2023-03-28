@@ -17,13 +17,13 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/elazarl/goproxy"
 	"github.com/fortytw2/leaktest"
-	"github.com/geziyor/geziyor"
-	"github.com/geziyor/geziyor/cache"
-	"github.com/geziyor/geziyor/cache/diskcache"
-	"github.com/geziyor/geziyor/client"
-	"github.com/geziyor/geziyor/export"
-	"github.com/geziyor/geziyor/internal"
-	"github.com/geziyor/geziyor/metrics"
+	"github.com/hohner2008/geziyor"
+	"github.com/hohner2008/geziyor/cache"
+	"github.com/hohner2008/geziyor/cache/diskcache"
+	"github.com/hohner2008/geziyor/client"
+	"github.com/hohner2008/geziyor/export"
+	"github.com/hohner2008/geziyor/internal"
+	"github.com/hohner2008/geziyor/metrics"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,7 +51,8 @@ func TestUserAgent(t *testing.T) {
 }
 
 func TestCache(t *testing.T) {
-	defer leaktest.Check(t)()
+	defer leaktest.Check(t
+)()
 	geziyor.NewGeziyor(&geziyor.Options{
 		StartURLs: []string{"http://api.ipify.org"},
 		ParseFunc: func(g *geziyor.Geziyor, r *client.Response) {
@@ -183,7 +184,8 @@ func TestGetRenderedCookie(t *testing.T) {
 			req, err := client.NewRequest("GET", testServer.URL, nil)
 			if err != nil {
 				internal.Logger.Printf("Request creating error %v\n", err)
-				return
+				
+return
 			}
 			req.Header.Set("Cookie", "key=value")
 			req.Rendered = true

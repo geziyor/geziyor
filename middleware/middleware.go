@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"github.com/geziyor/geziyor/client"
+	"github.com/hohner2008/geziyor/client"
 )
 
 // RequestResponseProcessor interface is for middlewares that needs to process both requests and responses

@@ -2,12 +2,12 @@ package geziyor
 
 import (
 	"github.com/chromedp/chromedp"
-	"github.com/geziyor/geziyor/cache"
-	"github.com/geziyor/geziyor/client"
-	"github.com/geziyor/geziyor/export"
-	"github.com/geziyor/geziyor/internal"
-	"github.com/geziyor/geziyor/metrics"
-	"github.com/geziyor/geziyor/middleware"
+	"github.com/hohner2008/geziyor/cache"
+	"github.com/hohner2008/geziyor/client"
+	"github.com/hohner2008/geziyor/export"
+	"github.com/hohner2008/geziyor/internal"
+	"github.com/hohner2008/geziyor/metrics"
+	"github.com/hohner2008/geziyor/middleware"
 	"golang.org/x/time/rate"
 
 	"io"

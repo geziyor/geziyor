@@ -13,7 +13,7 @@ import (
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
-	"github.com/geziyor/geziyor/internal"
+	"github.com/hohner2008/geziyor/internal"
 	"golang.org/x/net/html/charset"
 	"golang.org/x/text/transform"
 )
