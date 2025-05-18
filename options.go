@@ -1,15 +1,16 @@
 package geziyor
 
 import (
+	"net/http"
+	"net/url"
+	"time"
+
 	"github.com/chromedp/chromedp"
 	"github.com/geziyor/geziyor/cache"
 	"github.com/geziyor/geziyor/client"
 	"github.com/geziyor/geziyor/export"
 	"github.com/geziyor/geziyor/metrics"
 	"github.com/geziyor/geziyor/middleware"
-	"net/http"
-	"net/url"
-	"time"
 )
 
 // Options is custom options type for Geziyor
@@ -79,6 +80,10 @@ type Options struct {
 	// And you'll need to handle all rendered actions, like navigation, waiting, response etc.
 	// If you need to make custom actions in addition to the defaults, use Request.Actions instead of this.
 	PreActions []chromedp.Action
+
+	// Pass additional custom chromedp ExecAllocatorOptions.
+	// These are applied in addition to the DefaultExecAllocatorOptions.
+	AllocatorOptions []chromedp.ExecAllocatorOption
 
 	// Request delays
 	RequestDelay time.Duration

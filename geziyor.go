@@ -73,6 +73,8 @@ func NewGeziyor(opt *Options) *Geziyor {
 		metrics: metrics.NewMetrics(opt.MetricsType),
 	}
 
+	allocatorOptions := append(chromedp.DefaultExecAllocatorOptions[:], opt.AllocatorOptions...)
+
 	// Client
 	geziyor.Client = client.NewClient(&client.Options{
 		MaxBodySize:           opt.MaxBodySize,
@@ -80,7 +82,7 @@ func NewGeziyor(opt *Options) *Geziyor {
 		RetryTimes:            opt.RetryTimes,
 		RetryHTTPCodes:        opt.RetryHTTPCodes,
 		RemoteAllocatorURL:    opt.BrowserEndpoint,
-		AllocatorOptions:      chromedp.DefaultExecAllocatorOptions[:],
+		AllocatorOptions:      allocatorOptions,
 		ProxyFunc:             opt.ProxyFunc,
 		PreActions:            opt.PreActions,
 	})
